@@ -12,7 +12,7 @@ module core_lsu (
    stdio.in stdin_intf,
    stdio.out stdout_intf,
 
-   mem_rwport.master mem_intf
+   mem_rwport.master mem_rw_intf
 );
 
    logic state, state_next;
@@ -24,7 +24,7 @@ module core_lsu (
       end
    end
 
-   assign data_ro = state ? stdin_intf.data : mem_intf.rdata;
+   assign data_ro = state ? stdin_intf.data : mem_rw_intf.rdata;
 
    always_comb begin
       state_next = 0;
@@ -32,10 +32,10 @@ module core_lsu (
       stdin_intf.rdy = 0;
       stdout_intf.val = 0;
       stdout_intf.data = '0;
-      mem_intf.val = 0;
-      mem_intf.wen = 0;
-      mem_intf.addr = '0;
-      mem_intf.wdata = '0;
+      mem_rw_intf.val = 0;
+      mem_rw_intf.wen = 0;
+      mem_rw_intf.addr = '0;
+      mem_rw_intf.wdata = '0;
       if (val_i) begin
          if (addr_i == 8'hff) begin
             if (wen_i) begin
@@ -48,10 +48,10 @@ module core_lsu (
                stdin_intf.rdy = 1;
             end
          end else begin
-            mem_intf.val = 1;
-            mem_intf.wen = wen_i;
-            mem_intf.addr = addr_i;
-            mem_intf.wdata = data_i;
+            mem_rw_intf.val = 1;
+            mem_rw_intf.wen = wen_i;
+            mem_rw_intf.addr = addr_i;
+            mem_rw_intf.wdata = data_i;
          end
       end
    end
