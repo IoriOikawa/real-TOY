@@ -1,9 +1,9 @@
-interface core_arf_r_intf;
+interface core_arf_r;
    logic [3:0] addr,
    logic [15:0] data,
 endinterface
 
-interface core_arf_w_intf;
+interface core_arf_w;
    logic en,
    logic [3:0] addr,
    logic [15:0] data,
@@ -12,8 +12,8 @@ endinterface
 module core_arf (
    input clk_i,
    input rst_ni,
-   core_arf_r_intf r_intf[0:R_PORTS-1],
-   core_arf_w_intf w_intf[0:W_PORTS-1]
+   core_arf_r r_intf[0:R_PORTS-1],
+   core_arf_w w_intf[0:W_PORTS-1]
 );
    localparam R_PORTS = 2 + `SSC_IF;
    localparam W_PORTS = `SSC_EX + `SSC_MEM;

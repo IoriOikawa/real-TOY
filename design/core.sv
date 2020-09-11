@@ -1,14 +1,25 @@
+interface stdio
+   logic val,
+   logic [15:0] data,
+   logic rdy,
+   modport in (
+      input val,
+      input data,
+      output rdy
+   );
+   modport out (
+      output val,
+      output data,
+      input rdy
+   );
+endinterface
+
 module core (
    input clk_i,
    input rst_ni,
 
-   input in_val_i,
-   input [15:0] in_data_i,
-   output in_rdy_o,
-
-   output out_val_o,
-   output [15:0] out_data_o,
-   input out_rdy_i,
+   stdio.in stdin_intf,
+   stdio.out stdout_intf,
 
    mem_rwport.master mem_rw_intf,
    mem_rport.master mem_r_intf[0:`MEM_RPORTS-1],
