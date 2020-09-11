@@ -11,7 +11,7 @@ endinterface
 
 module core_arf (
    input clk_i,
-   input rst_ni,
+   input arst_ni,
    core_arf_r r_intf[0:R_PORTS-1],
    core_arf_w w_intf[0:W_PORTS-1]
 );
@@ -20,8 +20,8 @@ module core_arf (
 
    logic [15:0] mem[0:15];
 
-   always @(posedge clk_i, negedge rst_ni) begin
-      if (~rst_ni) begin
+   always @(posedge clk_i, negedge arst_ni) begin
+      if (~arst_ni) begin
          for (integer i = 0; i < 16; i = i + 1) begin
             mem[i] <= 16'b0;
          end

@@ -9,7 +9,7 @@ module core_alu (
 
    logic alu_op_r;
    logic [15:0] a_r, b_r;
-   always_ff @(posedge clk_i, negedge rst_i) begin
+   always_ff @(posedge clk_i) begin
       if (~rst_i) begin
          alu_op_r <= 0;
          a_r <= 16'b0;

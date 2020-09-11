@@ -16,7 +16,7 @@ module core_lsu (
 );
 
    logic state, state_next;
-   always_ff @(posedge clk_i, negedge rst_ni) begin
+   always_ff @(posedge clk_i) begin
       if (~rst_ni) begin
          state <= 0;
       end else if (val_i && rdy_o) begin

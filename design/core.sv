@@ -16,7 +16,8 @@ endinterface
 
 module core (
    input clk_i,
-   input rst_ni,
+   input arst_ni, // reset architectural stuff
+   input rst_ni, // reset microarchitectural stuff
 
    stdio.in stdin_intf,
    stdio.out stdout_intf,
@@ -29,7 +30,8 @@ module core (
    output [7:0] pc_i,
    output [7:0] pc_o,
    output instr_val_o,
-   output [15:0] instr_data_o
+   output [15:0] instr_data_o,
+   output cpu_done_o, // no more in-flight instr
 );
 
    logic valid_if, valid_dx, valid_wb;
@@ -42,11 +44,17 @@ module core (
    logic jump_en_dx;
    logic [7:0] jump_targ_dx;
    logic [7:0] pc_if;
-   always_ff @(posedge clk_i, negedge rst_ni) begin
-      if (~rst_ni) begin
+   always_ff @(posedge clk_i, negedge arst_ni) begin
+      if (~arst_ni) begin
          pc_if <= 8'h10;
+      end else if (rst_ni) begin
+         if (valid_dx) begin
+            pc_if <= virgin_pc_dx;
+         end
       end else if (pc_wen_i) begin
          pc_if <= pc_i;
+      end else if (halt_dx) begin
+         // do nothing
       end else if (jump_en_dx) begin
          pc_if <= jump_targ_dx;
       end else if (cpu_exec_i) begin
@@ -59,7 +67,7 @@ module core (
    logic [15:0] mem_buf_if[0:`SSC_IF-1];
 
    assign stall_if = ~&ready_if || stall_dx;
-   always_ff @(posedge clk_i, negedge rst_ni) begin
+   always_ff @(posedge clk_i) begin
       if (~rst_ni) begin
          valid_if <= 0;
          ready_r_if <= 0;
@@ -76,7 +84,7 @@ module core (
          assign mem_r_intf[gi].val = cpu_exec_i && ~stall_if || ~ready_r_if[gi];
          assign mem_r_intf[gi].addr = pc_dx[gi] = pc_if + gi;
          assign ready_if[gi] = stall_if && ready_r_if[gi] || mem_r_intf[gi].rdy;
-         always_ff @(posedge clk_i, negedge rst_ni) begin
+         always_ff @(posedge clk_i) begin
             if (~rst_ni) begin
                mem_buf_if[gi] <= 0;
             end else if (mem_r_intf[gi].val && mem_r_intf[gi].rdy) begin
@@ -94,11 +102,12 @@ module core (
    core_arf_w arf_w_wb[0:`SSC_EX+`SSC_MEM-1];
    core_arf i_arf (
       .clk_i,
-      .rst_ni,
+      .arst_ni,
       .r_intf (arf_r_dx),
       .w_intf (arf_w_wb)
    );
 
+   logic [7:0] virgin_pc_dx;
    logic [15:0] instr_dx[0:`SSC_EX-1];
    logic [3:0] rd_dx[0:`SSC_EX+`SSC_MEM-1], rd_wb[0:`SSC_EX+`SSC_MEM-1];
    logic [7:0] addr_dx[0:`SSC_EX-1];
@@ -115,15 +124,17 @@ module core (
    logic [15:0] lsu_data_dx;
    always_comb begin
       jump_en = 0;
-      jump_targ = 0;
+      jump_targ = '0;
       lsu_val_dx = 0;
       lsu_wen_dx = 0;
-      lsu_targ_dx = 0;
+      lsu_targ_dx = '0;
       halt_dx = 0;
-      instr_data_o = 0;
+      instr_data_o = '0;
+      virgin_pc_dx = '0;
       for (integer i = 0; i < `SSC_EX; i++) begin
          if (decoder_preempt_cas_dx[i].virgin && ~decoder_preempt_cas_dx[i+1].virgin) begin
             instr_data_o = instr_dx[i];
+            virgin_pc_dx = pc_dx[i];
          end
          if (decoder_preempt_dx[i].jump_en) begin
             jump_en_dx = 1;
@@ -147,7 +158,7 @@ module core (
    assign decoder_cas_dx[0].dirty = 15'b0;
    assign decoder_cas_dx[0].stall = stall_wb;
    assign stall_dx = decoder_cas_dx[`SSC_EX].stall || lsu_val_dx && ~lsu_rdy_dx;
-   always_ff @(posedge clk_i, negedge rst_ni) begin
+   always_ff @(posedge clk_i) begin
       if (~rst_ni) begin
          valid_dx <= 0;
       end else if (valid_if && ~stall_if && ~jump_en_dx) begin
@@ -258,7 +269,7 @@ module core (
 
    generate
       for (genvar gi = 0; gi < `SSC_EX+`SSC_MEM; gi++) begin : g_wb
-         always_ff @(posedge clk_i, negedge rst_ni) begin
+         always_ff @(posedge clk_i) begin
             if (~rst_ni) begin
                valid_wb <= 0;
                rd_wb[gi] <= 0;
@@ -279,5 +290,7 @@ module core (
          assign arf_w_wb[gi].data = gi == `SSC_EX ? lsu_wb : alu_wb[gi];
       end
    endgenerate
+
+   assign cpu_done_o = ~(cpu_exec_i || valid_if || valid_dx || valid_wb);
 
 endmodule
