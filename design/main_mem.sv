@@ -23,13 +23,15 @@ module main_mem (
    genvar gi;
    generate
    for (gi = 0; gi < `MEM_RPORTS; gi++) begin : g
-      logic [7:0] aaddr = r_intf[gi].addr;
-      logic [7:0] baddr = state ? ptr : rw_intf.addr;
-      logic [15:0] bdin = state ? 16'b0 : rw_intf.wdata;
-      logic [15:0] adout, bdout;
-      logic bwen = state || rw_intf.val && rw_intf.wen;
-      logic aen = r_intf[gi].val;
-      logic ben = state || rw_intf.val;
+      logic [7:0] aaddr, baddr;
+      logic [15:0] adout, bdin, bdout;
+      logic aen, ben, bwen;
+      assign aaddr = r_intf[gi].addr;
+      assign baddr = state ? ptr : rw_intf.addr;
+      assign bdin = state ? 16'b0 : rw_intf.wdata;
+      assign aen = r_intf[gi].val;
+      assign ben = state || rw_intf.val;
+      assign bwen = state || rw_intf.val && rw_intf.wen;
 
       logic [15:0] mem[0:255];
       always_ff @(posedge clk_i) begin

@@ -19,10 +19,14 @@ module core_decoder (
    core_decoder_preempt preempt_intf
 );
 
-   logic [3:0] op = instr_i[15:12];
-   logic [3:0] rd = instr_i[11:8];
-   logic [3:0] rs = instr_i[7:4];
-   logic [3:0] rt = instr_i[3:0];
+   logic [3:0] op;
+   assign op = instr_i[15:12];
+   logic [3:0] rd;
+   assign rd = instr_i[11:8];
+   logic [3:0] rs;
+   assign rs = instr_i[7:4];
+   logic [3:0] rt;
+   assign rt = instr_i[3:0];
 
    always_comb begin
       unique case (op)

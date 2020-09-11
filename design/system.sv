@@ -30,11 +30,12 @@ module system (
 
    output logic stdout_val_o,
    output logic [15:0] stdout_data_o,
-   input logic stdout_rdy_o
+   input logic stdout_rdy_i
 );
 
-   logic rst_n = ~btn_reset_i;
-   assign led_power_o = 1;
+   logic rst_n;
+   assign rst_n = ~btn_reset_i;
+   assign led_power_o = rst_n;
 
    mem_rwport mem_rw, mem_rw_core;
    mem_rport mem_r[0:`MEM_RPORTS-1];
@@ -80,12 +81,13 @@ module system (
       .cpu_done_o (cpu_done)
    );
 
-   logic inwait = ~pipe_stdin.val && pipe_stdin.rdy;
+   logic inwait;
+   assign inwait = ~pipe_stdin.val && pipe_stdin.rdy;
    assign raw_stdin.val = btn_enter_i;
    assign raw_stdin.data = sw_data_i;
    assign stdout_val_o = stdout.val;
    assign stdout_data_o = stdout.data;
-   assign stdout.rdy = stdout_rdy_o;
+   assign stdout.rdy = stdout_rdy_i;
 
    logic [2:0] state, state_next;
    always_ff @(posedge clk_i, negedge rst_n) begin
@@ -108,7 +110,6 @@ module system (
       led_ready_o = 0;
       core_rst_n = 0;
       cpu_exec = 0;
-      pc_wen = 0;
       instr_val = 0;
       unique case (state)
          0: // ready
@@ -167,6 +168,7 @@ module system (
       endcase
    end
 
+   assign pc_wen = cpu_done && (btn_load_i || btn_look_i);
    assign mem_rw.val = ~cpu_done
       ? mem_rw_core.val
       : (btn_load_i || btn_look_i);
@@ -182,6 +184,14 @@ module system (
    assign mem_rw_core.rdata = mem_rw.rdata;
    assign mem_rw_core.rdy = mem_rw.rdy;
 
+   logic tmp_look_r;
+   always_ff @(posedge clk_i, negedge rst_n) begin
+      if (~rst_n) begin
+         tmp_look_r <= 0;
+      end else begin
+         tmp_look_r <= cpu_done && btn_look_i && mem_rw.rdy;
+      end
+   end
    always_ff @(posedge clk_i, negedge rst_n) begin
       if (~rst_n) begin
          sw_data_o <= 16'b0;
@@ -189,7 +199,7 @@ module system (
          sw_data_o <= instr_data;
       end else if (cpu_done && btn_load_i && mem_rw.rdy) begin
          sw_data_o <= sw_data_i;
-      end else if (cpu_done && btn_look_i && mem_rw.rdy) begin
+      end else if (tmp_look_r) begin
          sw_data_o <= mem_rw.rdata;
       end
    end
