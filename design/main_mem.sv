@@ -21,33 +21,30 @@ module main_mem (
 	genvar gi;
 	generate
 	for (gi = 0; gi < MEM_RPORTS; gi++) begin : g
-		RAMB18E1 #(
-			.RAM_MODE ("TDP"),
-			.WRITE_MODE_A ("READ_FIRST")
-		) i_mem (
-			.DIADI (16'b0),
-			.DIPADIP (2'b0),
-			.DIBDI (state ? 16'b0 : rw_intf.wdata),
-			.DIPBDIP (2'b0),
-			.ADDRARDADDR ({2'b0,r_intf[gi].addr,4'b0}),
-			.ADDRBWRADDR ({2'b0,state ? ptr : rw_intf.addr,4'b0}),
-			.WEA (0),
-			.WEBWE (state || rw_intf.val),
-			.ENARDEN (r_intf[gi].val),
-			.ENBWREN (state || rw_intf.val),
-			.RSTREGARSTREG (0),
-			.RSTREGB (0),
-			.RSTRAMARSTRAM (0),
-			.RSTRAMB (0),
-			.CLKARDCLK (clk_i),
-			.CLKBWRCLK (clk_i),
-			.REGCEAREGCE (0),
-			.REGCEB (0),
-			.DOADO (r_intf[gi].rdata),
-			.DOPADOP (),
-			.DOBDO (rw_intf.rdata),
-			.DOPBDOP ()
-		);
+		logic [7:0] aaddr = r_intf[gi].addr;
+		logic [7:0] baddr = state ? ptr : rw_intf.addr;
+		logic [15:0] bdin = state ? 16'b0 : rw_intf.wdata;
+		logic [15:0] adout, bdout;
+		logic bwen = state || rw_intf.val && rw_intf.wen;
+		logic aen = r_intf[gi].val;
+		logic ben = state || rw_intf.val;
+
+		logic [15:0] mem[0:255];
+		always_ff @(posedge clk_i) begin
+			if (ben) begin
+				if (bwen) begin
+					mem[baddr] <= bdin;
+				end else begin
+					bdout <= mem[baddr];
+				end
+			end
+			if (aen) begin
+				adout <= mem[aaddr];
+			end
+		end
+
+		assign r_intf[gi].rdata = adout;
+		assign rw_intf.rdata = bdout;
 	end
 	endgenerate
 
