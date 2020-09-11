@@ -9,7 +9,7 @@ module core_arf (
    localparam R_PORTS = 2 * (`SSC_EX + `SSC_MEM);
    localparam W_PORTS = `SSC_EX + `SSC_MEM;
 
-   logic [15:0] mem[0:15], mem_nexts[0:15][0:W_PORTS-1];
+   logic [15:0] mem[0:15];
 
    generate
    for (genvar gi = 0; gi < R_PORTS; gi++) begin : g_r
@@ -19,25 +19,26 @@ module core_arf (
 
    generate
    for (genvar gj = 0; gj < 16; gj++) begin : g_f
+      logic [W_PORTS-1:0] tmp_en;
+      logic [W_PORTS-1:0] tmp_nxt[0:15];
+      logic [15:0] tmp_mem_nxt;
       always @(posedge clk_i, negedge arst_ni) begin
          if (~arst_ni) begin
             mem[gj] <= 16'b0;
-         end else begin
-            mem[gj] <= mem_nexts[gj][W_PORTS-1];
+         end else if (|tmp_en) begin
+            mem[gj] <= tmp_mem_nxt;
          end
       end
       for (genvar gi = 0; gi < W_PORTS; gi++) begin : g_w
-         always_comb begin
-            if (gi == 0) begin
-               mem_nexts[gj][gi] = mem[gj];
-            end else if (w_intf[gi].en && w_intf[gi].addr == gj) begin
-               mem_nexts[gj][gi] = w_intf[gi].data;
-            end else begin
-               mem_nexts[gj][gi] = mem_nexts[gj][gi-1];
-            end
+         assign tmp_en[gi] = w_intf[gi].en && w_intf[gi].addr == gj;
+         for (genvar gk = 0; gk < 16; gk++) begin : g_b
+            assign tmp_nxt[gk][gi] = tmp_en[gi] && w_intf[gi].data[gk];
          end
+      end
+      for (genvar gk = 0; gk < 16; gk++) begin : g_s
+         assign tmp_mem_nxt[gk] = |tmp_nxt[gk];
       end
    end
    endgenerate
 
-   endmodule
+endmodule

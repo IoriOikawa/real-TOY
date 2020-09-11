@@ -230,7 +230,9 @@ module core (
 
             arf_r_dx[2*gi].addr = r1_dx;
             arf_r_dx[2*gi+1].addr = r2_dx;
+         end
 
+         always_comb begin
             r1_byp_dx[gi] = arf_r_dx[2*gi].data;
             if (valid_wb) begin
                for (integer i = 0; i < `SSC_EX; i++) begin

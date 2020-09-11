@@ -10,7 +10,7 @@ module fifo #(
 );
 
    logic [15:0] mem[0:DEPTH-1];
-   logic [$clog2(DEPTH)-1:0] rptr, wptr;
+   logic [31:0] rptr, wptr;
    always_ff @(posedge clk_i, negedge rst_ni) begin
       if (~rst_ni) begin
          rptr <= '0;
