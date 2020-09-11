@@ -1,3 +1,5 @@
+`include "global.svh"
+
 interface mem_rwport;
 
    logic val;
@@ -70,7 +72,7 @@ module main_mem (
 
    genvar gi;
    generate
-   for (gi = 0; gi < MEM_RPORTS; gi++) begin : g
+   for (gi = 0; gi < `MEM_RPORTS; gi++) begin : g
       logic [7:0] aaddr = r_intf[gi].addr;
       logic [7:0] baddr = state ? ptr : rw_intf.addr;
       logic [15:0] bdin = state ? 16'b0 : rw_intf.wdata;

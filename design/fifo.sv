@@ -1,3 +1,5 @@
+`include "global.svh"
+
 module fifo #(
    parameter DEPTH = 2
 ) (
@@ -26,6 +28,6 @@ module fifo #(
 
    assign stdin.rdy = wptr - rptr != 1;
    assign stdout.val = wptr != rptr;
-   assign stdout.data <= mem[rptr];
+   assign stdout.data = mem[rptr];
 
 endmodule

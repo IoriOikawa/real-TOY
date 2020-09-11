@@ -1,3 +1,5 @@
+`include "global.svh"
+
 module system_wrap (
    input clk_i,
    inout i2c_scl_io,

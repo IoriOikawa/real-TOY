@@ -1,12 +1,14 @@
+`include "global.svh"
+
 interface core_arf_r;
-   logic [3:0] addr,
-   logic [15:0] data,
+   logic [3:0] addr;
+   logic [15:0] data;
 endinterface
 
 interface core_arf_w;
-   logic en,
-   logic [3:0] addr,
-   logic [15:0] data,
+   logic en;
+   logic [3:0] addr;
+   logic [15:0] data;
 endinterface
 
 module core_arf (

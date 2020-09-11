@@ -1,11 +1,13 @@
-interface core_decoder_cascade
+`include "global.svh"
+
+interface core_decoder_cascade;
    logic en;
    logic virgin;
    logic [15:0] dirty;
    logic stall;
 endinterface
 
-interface core_decoder_preempt
+interface core_decoder_preempt;
    logic jump_en;
    logic jump_kind; // 0: R[t]  1: addr
    logic lsu_en;
@@ -119,27 +121,33 @@ module core_decoder (
                   arf_wen_o = 1;
                end
             4'h7: // load address
-               my_en_o = 0;
-               down_intf.dirty[rd] = |rd;
-               alu_kind_o = 1;
-               alu_op_o = 7;
-               arf_wen_o = 1;
+               begin
+                  my_en_o = 0;
+                  down_intf.dirty[rd] = |rd;
+                  alu_kind_o = 1;
+                  alu_op_o = 7;
+                  arf_wen_o = 1;
+               end
             4'h8: // load
-               my_en_o = 0;
-               down_intf.stall = 1;
-               down_intf.dirty[rd] = |rd;
-               preempt_intf.lsu_en = 1;
-               lsu_kind_o = 1;
-            4'h9: // store
-               arf_kind_o = 1;
-               if (up_intf.dirty[rd]) begin
-                  down_intf.stall = 1;
-               end else begin
+               begin
                   my_en_o = 0;
                   down_intf.stall = 1;
+                  down_intf.dirty[rd] = |rd;
                   preempt_intf.lsu_en = 1;
-                  preempt_intf.lsu_wen = 1;
                   preempt_intf.lsu_kind = 1;
+               end
+            4'h9: // store
+               begin
+                  arf_kind_o = 1;
+                  if (up_intf.dirty[rd]) begin
+                     down_intf.stall = 1;
+                  end else begin
+                     my_en_o = 0;
+                     down_intf.stall = 1;
+                     preempt_intf.lsu_en = 1;
+                     preempt_intf.lsu_wen = 1;
+                     preempt_intf.lsu_kind = 1;
+                  end
                end
             4'ha: // load indirect
                if (up_intf.dirty[rt]) begin
@@ -151,56 +159,66 @@ module core_decoder (
                   preempt_intf.lsu_en = 1;
                end
             4'hb: // store indirect
-               arf_kind_o = 1;
-               if (up_intf.dirty[rd] || up_intf.dirty[rt]) begin
-                  down_intf.stall = 1;
-               end else begin
-                  my_en_o = 0;
-                  down_intf.stall = 1;
-                  preempt_intf.lsu_en = 1;
-                  preempt_intf.lsu_wen = 1;
+               begin
+                  arf_kind_o = 1;
+                  if (up_intf.dirty[rd] || up_intf.dirty[rt]) begin
+                     down_intf.stall = 1;
+                  end else begin
+                     my_en_o = 0;
+                     down_intf.stall = 1;
+                     preempt_intf.lsu_en = 1;
+                     preempt_intf.lsu_wen = 1;
+                  end
                end
             4'hc: // branch zero
-               arf_kind_o = 1;
-               if (up_intf.dirty[rd]) begin
-                  down_intf.stall = 1;
-               end else if (branch_z_i) begin
-                  my_en_o = 0;
-                  down_intf.en = 0;
-                  jump_en_o = 1;
-                  jump_kind_o = 1;
-               end else begin
-                  my_en_o = 0;
+               begin
+                  arf_kind_o = 1;
+                  if (up_intf.dirty[rd]) begin
+                     down_intf.stall = 1;
+                  end else if (branch_z_i) begin
+                     my_en_o = 0;
+                     down_intf.en = 0;
+                     preempt_intf.jump_en = 1;
+                     preempt_intf.jump_kind = 1;
+                  end else begin
+                     my_en_o = 0;
+                  end
                end
             4'hd: // branch zero
-               arf_kind_o = 1;
-               if (up_intf.dirty[rd]) begin
-                  down_intf.stall = 1;
-               end else if (branch_p_i) begin
-                  my_en_o = 0;
-                  down_intf.en = 0;
-                  preempt_intf.jump_en = 1;
-                  preempt_intf.jump_kind = 1;
-               end else begin
-                  my_en_o = 0;
+               begin
+                  arf_kind_o = 1;
+                  if (up_intf.dirty[rd]) begin
+                     down_intf.stall = 1;
+                  end else if (branch_p_i) begin
+                     my_en_o = 0;
+                     down_intf.en = 0;
+                     preempt_intf.jump_en = 1;
+                     preempt_intf.jump_kind = 1;
+                  end else begin
+                     my_en_o = 0;
+                  end
                end
             4'he: // jump register
-               arf_kind_o = 1;
-               if (up_intf.dirty[rd]) begin
-                  down_intf.stall = 1;
-               end else begin
-                  my_en_o = 0;
-                  down_intf.en = 0;
-                  preempt_intf.jump_en = 1;
+               begin
+                  arf_kind_o = 1;
+                  if (up_intf.dirty[rd]) begin
+                     down_intf.stall = 1;
+                  end else begin
+                     my_en_o = 0;
+                     down_intf.en = 0;
+                     preempt_intf.jump_en = 1;
+                  end
                end
             4'hf: // jump and link
-               my_en_o = 0;
-               down_intf.en = 0;
-               alu_kind_o = 1;
-               alu_op_o = 6;
-               arf_wen_o = 1;
-               preempt_intf.jump_en = 1;
-               preempt_intf.jump_kind =1;
+               begin
+                  my_en_o = 0;
+                  down_intf.en = 0;
+                  alu_kind_o = 1;
+                  alu_op_o = 6;
+                  arf_wen_o = 1;
+                  preempt_intf.jump_en = 1;
+                  preempt_intf.jump_kind =1;
+               end
          endcase
       end
    end

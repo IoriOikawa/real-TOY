@@ -1,3 +1,5 @@
+`include "global.svh"
+
 module core_lsu (
    input clk_i,
    input rst_ni,

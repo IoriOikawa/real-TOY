@@ -1,7 +1,9 @@
-interface stdio
-   logic val,
-   logic [15:0] data,
-   logic rdy,
+`include "global.svh"
+
+interface stdio;
+   logic val;
+   logic [15:0] data;
+   logic rdy;
    modport in (
       input val,
       input data,
@@ -27,11 +29,11 @@ module core (
 
    input cpu_exec_i, // enable IF
    input pc_wen_i, // manually change PC
-   output [7:0] pc_i,
+   input [7:0] pc_i,
    output [7:0] pc_o,
    output instr_val_o,
    output [15:0] instr_data_o,
-   output cpu_done_o, // no more in-flight instr
+   output cpu_done_o // no more in-flight instr
 );
 
    logic valid_if, valid_dx, valid_wb;
@@ -43,6 +45,7 @@ module core (
 
    logic jump_en_dx;
    logic [7:0] jump_targ_dx;
+   logic halt_dx;
    logic [7:0] pc_if;
    always_ff @(posedge clk_i, negedge arst_ni) begin
       if (~arst_ni) begin
@@ -71,7 +74,7 @@ module core (
       if (~rst_ni) begin
          valid_if <= 0;
          ready_r_if <= 0;
-      end else (cpu_exec_i) begin
+      end else if (cpu_exec_i) begin
          valid_if <= &ready_if;
          ready_r_if <= ready_if;
       end
@@ -81,14 +84,15 @@ module core (
 
    generate
       for (genvar gi = 0; gi < `SSC_EX; gi++) begin : g_if
+         assign pc_dx[gi] = pc_if + gi;
          assign mem_r_intf[gi].val = cpu_exec_i && ~stall_if || ~ready_r_if[gi];
-         assign mem_r_intf[gi].addr = pc_dx[gi] = pc_if + gi;
+         assign mem_r_intf[gi].addr = pc_if + gi;
          assign ready_if[gi] = stall_if && ready_r_if[gi] || mem_r_intf[gi].rdy;
          always_ff @(posedge clk_i) begin
             if (~rst_ni) begin
                mem_buf_if[gi] <= 0;
             end else if (mem_r_intf[gi].val && mem_r_intf[gi].rdy) begin
-               mem_buf_if[gi] <= mem_r_intf[gi].data;
+               mem_buf_if[gi] <= mem_r_intf[gi].rdata;
             end
          end
       end
@@ -123,30 +127,31 @@ module core (
    logic [7:0] lsu_addr_dx;
    logic [15:0] lsu_data_dx;
    always_comb begin
-      jump_en = 0;
-      jump_targ = '0;
+      jump_en_dx = 0;
+      jump_targ_dx = '0;
       lsu_val_dx = 0;
       lsu_wen_dx = 0;
-      lsu_targ_dx = '0;
+      lsu_addr_dx = '0;
+      lsu_data_dx = '0;
       halt_dx = 0;
       instr_data_o = '0;
       virgin_pc_dx = '0;
       for (integer i = 0; i < `SSC_EX; i++) begin
-         if (decoder_preempt_cas_dx[i].virgin && ~decoder_preempt_cas_dx[i+1].virgin) begin
+         if (decoder_cas_dx[i].virgin && ~decoder_cas_dx[i+1].virgin) begin
             instr_data_o = instr_dx[i];
             virgin_pc_dx = pc_dx[i];
          end
          if (decoder_preempt_dx[i].jump_en) begin
             jump_en_dx = 1;
-            jump_targ_dx = decoder_preempt_dx[i].jump_kind ? addr_dx[gi] : r2_byp_dx[gi];
+            jump_targ_dx = decoder_preempt_dx[i].jump_kind ? addr_dx[i] : r2_byp_dx[i];
          end
          if (decoder_preempt_dx[i].lsu_en) begin
             lsu_val_dx = 1;
             lsu_wen_dx = decoder_preempt_dx[i].lsu_wen;
-            lsu_addr_dx = decoder_preempt_dx[i].lsu_kind ? addr_dx[gi] : r2_byp_dx[gi];
-            lsu_data_dx = r1_byp_dx[gi];
+            lsu_addr_dx = decoder_preempt_dx[i].lsu_kind ? addr_dx[i] : r2_byp_dx[i];
+            lsu_data_dx = r1_byp_dx[i];
          end
-         if (decoder_preempt_dx[i].halt_dx) begin
+         if (decoder_preempt_dx[i].halt) begin
             halt_dx = 1;
          end
       end
@@ -178,6 +183,7 @@ module core (
       .addr_i (lsu_addr_dx),
       .data_i (lsu_data_dx),
       .data_ro (lsu_wb),
+      .rdy_o (lsu_rdy_dx),
 
       .stdin_intf,
       .stdout_intf,
