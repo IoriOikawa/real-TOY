@@ -1,21 +1,5 @@
 `include "global.svh"
 
-interface core_decoder_cascade;
-   logic en;
-   logic virgin;
-   logic [15:0] dirty;
-   logic stall;
-endinterface
-
-interface core_decoder_preempt;
-   logic jump_en;
-   logic jump_kind; // 0: R[t]  1: addr
-   logic lsu_en;
-   logic lsu_wen;
-   logic lsu_kind; // 0: R[t]  1: addr
-   logic halt;
-endinterface
-
 module core_decoder (
    input [15:0] instr_i,
 
