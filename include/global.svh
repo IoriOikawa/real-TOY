@@ -1,6 +1,5 @@
-`define SSC_IFID 4
-`define SSC_IX   4
-`define SSC_IL   1
-`define SSC_IS   1
+`define SSC_IF (`SSC_EX + `SSC_MEM)
+`define SSC_EX 5
+`define SSC_MEM 1
 
-`define MEM_RPORTS (`SSC_IFID + `SSC_IL)
+`define MEM_RPORTS (`SSC_IF)

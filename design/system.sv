@@ -26,7 +26,7 @@ module system (
    input [15:0] sw_data_i,
    output [15:0] sw_data_o,
 
-	output [15:0] number_o
+   output [15:0] number_o
 );
 
    logic rst_n = ~btn_reset_i;
@@ -44,7 +44,7 @@ module system (
       .r_intf (mem_r)
    );
 
-   logic running;
+   logic cpu_exec, cpu_running;
    logic instr_val;
    logic [15:0] instr_data;
 
@@ -63,26 +63,25 @@ module system (
       .mem_rw_intf (mem_rw_core),
       .mem_r_intf (mem_r),
 
-      .cpu_exec_i,
-      .pc_wen_i (~running && (btn_load_i || btn_look_i)),
+      .cpu_exec_i (cpu_exec),
+      .pc_wen_i (~cpu_running && (btn_load_i || btn_look_i)),
       .pc_i (sw_addr_i),
       .pc_o (sw_addr_o),
       .instr_val_o (instr_val),
       .instr_data_o (instr_data),
-
-      .running_o (running)
+      .cpu_running_o (cpu_running)
    );
 
-   assign mem_rw.val = running
+   assign mem_rw.val = cpu_running
       ? mem_rw_core.val
       : (btn_load_i || btn_look_i);
-   assign mem_rw.wen = running
+   assign mem_rw.wen = cpu_running
       ? mem_rw_core.wen
       : btn_load_i;
-   assign mem_rw.addr = running
+   assign mem_rw.addr = cpu_running
       ? mem_rw_core.addr
       : sw_addr_i;
-   assign mem_rw.wdata = running
+   assign mem_rw.wdata = cpu_running
       ? mem_rw_core.wdata
       : sw_data_i;
    assign mem_rw_core.rdata = mem_rw.rdata;
@@ -93,9 +92,9 @@ module system (
          sw_data_o <= 16'b0;
       end else if (instr_val) begin
          sw_data_o <= instr_data;
-      end else if (~running && btn_load_i && mem_rw.rdy) begin
+      end else if (~cpu_running && btn_load_i && mem_rw.rdy) begin
          sw_data_o <= sw_data_i;
-      end else if (~running && btn_look_i && mem_rw.rdy) begin
+      end else if (~cpu_running && btn_look_i && mem_rw.rdy) begin
          sw_data_o <= mem_rw.rdata;
       end
    end

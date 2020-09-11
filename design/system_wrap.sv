@@ -1,11 +1,8 @@
-module top (
-   input sys_clk_i,
+module system_wrap (
+   input clk_i,
    inout i2c_scl_io,
    inout i2c_sda_io
 );
-
-   // TODO: pll
-   logic clk = sys_clk_i;
 
    logic i2c_scl_i, i2c_scl_o, i2c_scl_t;
    logic i2c_sda_i, i2c_sda_o, i2c_sda_t;
