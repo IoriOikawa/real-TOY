@@ -3,13 +3,13 @@
 module fifo #(
    parameter DEPTH = 2
 ) (
-   input clk_i,
-   input rst_ni,
+   input logic clk_i,
+   input logic rst_ni,
    stdio.in stdin,
    stdio.out stdout
 );
 
-   logic [15:0] mem[0:DEPTH];
+   logic [15:0] mem[0:DEPTH-1];
    logic [$clog2(DEPTH)-1:0] rptr, wptr;
    always_ff @(posedge clk_i, negedge rst_ni) begin
       if (~rst_ni) begin

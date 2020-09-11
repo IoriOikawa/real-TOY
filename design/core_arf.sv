@@ -1,34 +1,43 @@
 `include "global.svh"
 
 module core_arf (
-   input clk_i,
-   input arst_ni,
+   input logic clk_i,
+   input logic arst_ni,
    core_arf_r r_intf[0:R_PORTS-1],
    core_arf_w w_intf[0:W_PORTS-1]
 );
-   localparam R_PORTS = 2 + `SSC_IF;
+   localparam R_PORTS = 2 * (`SSC_EX + `SSC_MEM);
    localparam W_PORTS = `SSC_EX + `SSC_MEM;
 
-   logic [15:0] mem[0:15];
+   logic [15:0] mem[0:15], mem_nexts[0:15][0:W_PORTS-1];
 
-   always @(posedge clk_i, negedge arst_ni) begin
-      if (~arst_ni) begin
-         for (integer i = 0; i < 16; i = i + 1) begin
-            mem[i] <= 16'b0;
+   generate
+   for (genvar gi = 0; gi < R_PORTS; gi++) begin : g_r
+      assign r_intf[gi].data = mem[r_intf[gi].addr];
+   end
+   endgenerate
+
+   generate
+   for (genvar gj = 0; gj < 16; gj++) begin : g_f
+      always @(posedge clk_i, negedge arst_ni) begin
+         if (~arst_ni) begin
+            mem[gj] <= 16'b0;
+         end else begin
+            mem[gj] <= mem_nexts[gj][W_PORTS-1];
          end
-      end else begin
-         for (integer j = 0; j < W_PORTS; j = j + 1) begin
-            if (w_intf[j].en) begin
-               mem[w_intf[j].addr] <= w_intf[j].data;
+      end
+      for (genvar gi = 0; gi < W_PORTS; gi++) begin : g_w
+         always_comb begin
+            if (gi == 0) begin
+               mem_nexts[gj][gi] = mem[gj];
+            end else if (w_intf[gi].en && w_intf[gi].addr == gj) begin
+               mem_nexts[gj][gi] = w_intf[gi].data;
+            end else begin
+               mem_nexts[gj][gi] = mem_nexts[gj][gi-1];
             end
          end
       end
    end
+   endgenerate
 
-   always_comb begin
-      for (integer i = 0; i < R_PORTS; i++) begin
-         r_intf[i].data = mem[r_intf[i].addr];
-      end
-   end
-
-endmodule
+   endmodule

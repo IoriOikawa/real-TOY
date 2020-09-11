@@ -1,36 +1,36 @@
 `include "global.svh"
 
 module system (
-   input clk_i,
+   input logic clk_i,
 
-   input btn_load_i,
-   output btn_load_o,
-   input btn_look_i,
-   output btn_look_o,
-   input btn_step_i,
-   output btn_step_o,
-   input btn_run_i,
-   output btn_run_o,
-   input btn_enter_i,
-   output btn_enter_o,
-   input btn_stop_i,
-   output btn_stop_o,
-   input btn_reset_i,
-   output btn_reset_o,
+   input logic btn_load_i,
+   output logic btn_load_o,
+   input logic btn_look_i,
+   output logic btn_look_o,
+   input logic btn_step_i,
+   output logic btn_step_o,
+   input logic btn_run_i,
+   output logic btn_run_o,
+   input logic btn_enter_i,
+   output logic btn_enter_o,
+   input logic btn_stop_i,
+   output logic btn_stop_o,
+   input logic btn_reset_i,
+   output logic btn_reset_o,
 
-   output led_power_o,
-   output led_inwait_o,
-   output led_ready_o,
+   output logic led_power_o,
+   output logic led_inwait_o,
+   output logic led_ready_o,
 
-   input [7:0] sw_addr_i,
-   output [7:0] sw_addr_o,
+   input logic [7:0] sw_addr_i,
+   output logic [7:0] sw_addr_o,
 
-   input [15:0] sw_data_i,
-   output [15:0] sw_data_o,
+   input logic [15:0] sw_data_i,
+   output logic [15:0] sw_data_o,
 
-   output stdout_val_o,
-   output stdout_data_o,
-   input stdout_rdy_o
+   output logic stdout_val_o,
+   output logic [15:0] stdout_data_o,
+   input logic stdout_rdy_o
 );
 
    logic rst_n = ~btn_reset_i;
@@ -121,6 +121,8 @@ module system (
                btn_reset_o = 1;
                led_ready_o = 1;
                if (btn_run_i) begin
+                  state_next = 2;
+               end else if (btn_step_i) begin
                   state_next = 1;
                end
             end

@@ -1,15 +1,15 @@
 `include "global.svh"
 
 module core_alu (
-   input clk_i,
-   input rst_ni,
-   input [2:0] alu_op_i,
-   input [15:0] a_i,
-   input [15:0] b_i,
-   output [15:0] c_ro
+   input logic clk_i,
+   input logic rst_ni,
+   input logic [2:0] alu_op_i,
+   input logic [15:0] a_i,
+   input logic [15:0] b_i,
+   output logic [15:0] c_ro
 );
 
-   logic alu_op_r;
+   logic [2:0] alu_op_r;
    logic [15:0] a_r, b_r;
    always_ff @(posedge clk_i) begin
       if (~rst_ni) begin

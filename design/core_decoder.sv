@@ -1,18 +1,18 @@
 `include "global.svh"
 
 module core_decoder (
-   input [15:0] instr_i,
+   input logic [15:0] instr_i,
 
-   input my_en_i,
-   output my_en_o,
+   input logic my_en_i,
+   output logic my_en_o,
 
-   output arf_kind_o, // 0: R[s],R[t]  1: R[d],R[t]
-   output alu_kind_o, // 0: R[s],R[t]  1: pc,addr
-   output [2:0] alu_op_o,
-   output arf_wen_o,
+   output logic arf_kind_o, // 0: R[s],R[t]  1: R[d],R[t]
+   output logic alu_kind_o, // 0: R[s],R[t]  1: pc,addr
+   output logic [2:0] alu_op_o,
+   output logic arf_wen_o,
 
-   input branch_z_i,
-   input branch_p_i,
+   input logic branch_z_i,
+   input logic branch_p_i,
 
    core_decoder_cascade up_intf,
    core_decoder_cascade down_intf,

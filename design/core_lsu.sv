@@ -1,15 +1,15 @@
 `include "global.svh"
 
 module core_lsu (
-   input clk_i,
-   input rst_ni,
+   input logic clk_i,
+   input logic rst_ni,
 
-   input val_i,
-   input wen_i,
-   input [7:0] addr_i,
-   input [15:0] data_i,
-   output [15:0] data_ro,
-   output rdy_o,
+   input logic val_i,
+   input logic wen_i,
+   input logic [7:0] addr_i,
+   input logic [15:0] data_i,
+   output logic [15:0] data_ro,
+   output logic rdy_o,
 
    stdio.in stdin_intf,
    stdio.out stdout_intf,

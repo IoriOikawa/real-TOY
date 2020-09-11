@@ -1,8 +1,8 @@
 `include "global.svh"
 
 module main_mem (
-   input clk_i,
-   input rst_ni, // wipe out all data
+   input logic clk_i,
+   input logic rst_ni, // wipe out all data
 
    mem_rwport.slave rw_intf,
    mem_rport.slave r_intf[0:`MEM_RPORTS-1]
@@ -46,7 +46,9 @@ module main_mem (
       end
 
       assign r_intf[gi].rdata = adout;
+      assign r_intf[gi].rdy = 1;
       assign rw_intf.rdata = bdout;
+      assign rw_intf.rdy = 1;
    end
    endgenerate
 
