@@ -35,6 +35,7 @@ module main_mem (
 
       logic [15:0] mem[0:255];
       always_ff @(posedge clk_i) begin
+         // Ensure the memory is write-first.
          if (ben) begin
             if (bwen) begin
                mem[baddr] <= bdin;

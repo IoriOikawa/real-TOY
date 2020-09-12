@@ -24,6 +24,10 @@ module core (
    logic valid_if, valid_dx, valid_wb;
    logic stall_if, stall_dx, stall_wb;
 
+   // For self-modifying code
+   logic massacre_wb;
+   logic [7:0] massacre_targ_wb;
+
    // =====================
    // pc
    // =====================
@@ -32,7 +36,8 @@ module core (
    logic [7:0] jump_targ_dx;
    logic halt_dx;
    logic [7:0] pc_pc, pc_n_pc;
-   assign pc_n_pc = jump_en_dx ? jump_targ_dx : pc_pc;
+   assign pc_n_pc = massacre_wb ? massacre_targ_wb
+      : jump_en_dx ? jump_targ_dx : pc_pc;
    always_ff @(posedge clk_i, negedge arst_ni) begin
       if (~arst_ni) begin
          pc_pc <= 8'h10;
@@ -42,7 +47,7 @@ module core (
          if (valid_dx) begin
             pc_pc <= virgin_pc_dx;
          end
-      end else if (halt_dx) begin
+      end else if (halt_dx && ~massacre_wb) begin
          // do nothing
       end else if (cpu_exec_i == 1) begin
          pc_pc <= pc_n_pc + `SSC_IF;
@@ -172,6 +177,7 @@ module core (
    logic lsu_val_dx, lsu_wen_dx, lsu_rdy_dx;
    logic [7:0] lsu_addr_dx;
    logic [15:0] lsu_data_dx;
+   logic [7:0] lsu_pc_dx;
    logic [`SSC_EX-1:0] tmp_virgin_dx;
    logic [`SSC_EX-1:0] tmp_jump_en_dx, tmp_jump_kind_dx;
    logic [`SSC_EX-1:0] tmp_lsu_en_dx, tmp_lsu_wen_dx, tmp_lsu_kind_dx;
@@ -183,6 +189,7 @@ module core (
       lsu_wen_dx = 0;
       lsu_addr_dx = '0;
       lsu_data_dx = '0;
+      lsu_pc_dx = '0;
       halt_dx = 0;
       instr_data_o = '0;
       virgin_pc_dx = '0;
@@ -200,6 +207,7 @@ module core (
             lsu_wen_dx = tmp_lsu_wen_dx[i];
             lsu_addr_dx = tmp_lsu_kind_dx[i] ? addr_dx[i] : r2_byp_dx[i][7:0];
             lsu_data_dx = r1_byp_dx[i];
+            lsu_pc_dx = pc_dx[i];
          end
          if (tmp_halt_dx[i]) begin
             halt_dx = 1;
@@ -216,9 +224,9 @@ module core (
    always_ff @(posedge clk_i) begin
       if (~rst_ni) begin
          valid_dx <= 0;
-      end else if (jump_en_dx) begin
+      end else if (jump_en_dx || massacre_wb) begin
          valid_dx <= 0;
-      end else if (valid_if && ~stall_if && ~jump_en_dx) begin
+      end else if (valid_if && ~stall_if) begin
          valid_dx <= 1;
       end else if (~stall_dx) begin
          valid_dx <= 0;
@@ -230,7 +238,7 @@ module core (
       .clk_i,
       .rst_ni,
 
-      .val_i (lsu_val_dx),
+      .val_i (lsu_val_dx && ~massacre_wb),
       .wen_i (lsu_wen_dx),
       .addr_i (lsu_addr_dx),
       .data_i (lsu_data_dx),
@@ -264,9 +272,9 @@ module core (
          always_ff @(posedge clk_i) begin
             if (~rst_ni) begin
                en_dx <= 0;
-            end else if (jump_en_dx) begin
+            end else if (jump_en_dx || massacre_wb) begin
                en_dx <= 0;
-            end else if (valid_if && ~stall_dx && ~jump_en_dx) begin
+            end else if (valid_if && ~stall_dx) begin
                en_dx <= cpu_exec_i == 1 || ~|gi;
             end else if (~(decoder_preempt_dx[gi].lsu_en && ~lsu_rdy_dx)) begin
                en_dx <= en_next_dx;
@@ -347,17 +355,36 @@ module core (
    // wb
    // =====================
 
+   logic lsu_danger_wb;
+   logic [7:0] lsu_addr_wb;
+   logic [7:0] lsu_pc_wb;
    assign stall_wb = 0;
 
    always_ff @(posedge clk_i) begin
       if (~rst_ni) begin
          valid_wb <= 0;
-      end else if (valid_dx) begin
+         lsu_danger_wb <= 0;
+         lsu_addr_wb <= 0;
+         lsu_pc_wb <= 0;
+      end else if (valid_dx && ~massacre_wb) begin
          valid_wb <= ~halt_dx;
+         lsu_danger_wb <= lsu_val_dx && lsu_wen_dx;
+         lsu_addr_wb <= lsu_addr_dx;
+         lsu_pc_wb <= lsu_pc_dx;
       end else if (~stall_wb) begin
          valid_wb <= 0;
+         lsu_danger_wb <= 0;
+         lsu_addr_wb <= 0;
+         lsu_pc_wb <= 0;
       end
    end
+
+   // May have false positives.
+   // 0xFF is UB so we don't care.
+   assign massacre_wb = valid_dx && lsu_danger_wb &&
+      (pc_dx[0] <= lsu_addr_wb && lsu_addr_wb <= pc_dx[`SSC_IF-1]);
+   assign massacre_targ_wb = lsu_pc_wb + 1;
+
    generate
    for (genvar gi = 0; gi < `SSC_EX+`SSC_MEM; gi++) begin : g_wb
       always_ff @(posedge clk_i) begin
@@ -372,7 +399,6 @@ module core (
             arf_wen_wb[gi] <= 0;
          end
       end
-
       assign arf_w_wb[gi].en = arf_wen_wb[gi];
       assign arf_w_wb[gi].addr = rd_wb[gi];
    end
