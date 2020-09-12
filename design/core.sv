@@ -17,6 +17,7 @@ module core (
    output logic [7:0] pc_o,
    output logic instr_val_o,
    output logic [15:0] instr_data_o,
+   output logic cpu_halt_o,
    output logic cpu_done_o // no more in-flight instr
 );
 
@@ -24,55 +25,64 @@ module core (
    logic stall_if, stall_dx, stall_wb;
 
    // =====================
-   // if
+   // pc
    // =====================
 
    logic jump_en_dx;
    logic [7:0] jump_targ_dx;
    logic halt_dx;
-   logic [7:0] pc_if;
+   logic [7:0] pc_pc;
    always_ff @(posedge clk_i, negedge arst_ni) begin
       if (~arst_ni) begin
-         pc_if <= 8'h10;
+         pc_pc <= 8'h10;
+      end else if (pc_wen_i) begin
+         pc_pc <= pc_i;
       end else if (~rst_ni) begin
          if (valid_dx) begin
-            pc_if <= virgin_pc_dx;
+            pc_pc <= virgin_pc_dx;
          end
-      end else if (pc_wen_i) begin
-         pc_if <= pc_i;
       end else if (halt_dx) begin
          // do nothing
       end else if (jump_en_dx) begin
-         pc_if <= jump_targ_dx;
+         pc_pc <= jump_targ_dx;
       end else if (cpu_exec_i == 1) begin
-         pc_if <= pc_if + `SSC_IF;
+         pc_pc <= pc_pc + `SSC_IF;
       end else if (cpu_exec_i == 2) begin
-         pc_if <= pc_if + 1;
+         pc_pc <= pc_pc + 1;
       end
    end
-   assign pc_o = pc_if;
+   assign pc_o = pc_pc;
 
-   logic [`SSC_IF-1:0] ready_if, ready_r_if;
+   // =====================
+   // if
+   // =====================
+
+   logic [7:0] pc_if;
+   always_ff @(posedge clk_i, negedge arst_ni) begin
+      if (~arst_ni) begin
+         pc_if <= 0;
+      end else if (~rst_ni) begin
+         pc_if <= 0;
+      end else if (~stall_if) begin
+         pc_if <= pc_pc;
+      end
+   end
+
+   logic [`SSC_IF-1:0] ready_if; // Good to go
+   logic [`SSC_IF-1:0] nready_if; // Need to stall
+   logic [`SSC_IF-1:0] ready_n_if; // Next ready_r
+   logic [`SSC_IF-1:0] ready_r_if; // Buffered or not
    logic [15:0] mem_buf_if[0:`SSC_IF-1];
    logic [15:0] instr_dx[0:`SSC_IF-1];
 
-   assign stall_if = ~&ready_if || stall_dx;
+   assign stall_if = |nready_if || stall_dx;
    always_ff @(posedge clk_i) begin
       if (~rst_ni) begin
          valid_if <= 0;
          ready_r_if <= '0;
-      end else if (halt_dx) begin
-         valid_if <= 0;
-         ready_r_if <= '0;
-      end else if (stall_if) begin
+      end else begin
          valid_if <= &ready_if;
-         ready_r_if <= ready_if;
-      end else if (cpu_exec_i == 1) begin
-         valid_if <= 1;
-         ready_r_if <= '0;
-      end else if (cpu_exec_i == 2) begin
-         valid_if <= ~(valid_if || valid_dx || valid_wb);
-         ready_r_if <= '0;
+         ready_r_if <= ready_n_if;
       end
    end
 
@@ -81,19 +91,32 @@ module core (
    generate
    for (genvar gi = 0; gi < `SSC_IF; gi++) begin : g_if
       always_comb begin
-         pc_dx[gi] = pc_if + gi;
-         mem_r_intf[gi].addr = pc_if + gi;
+         mem_r_intf[gi].addr = pc_pc + gi;
          mem_r_intf[gi].val = 0;
          ready_if[gi] = 0;
+         nready_if[gi] = 0;
+         ready_n_if[gi] = 0;
          if (~rst_ni) begin
             // do nothing
          end else if (cpu_exec_i == 1 || cpu_exec_i == 2 && ~|gi) begin
-            if (stall_dx && ready_r_if[gi]) begin
-               mem_r_intf[gi].val = 0;
+            if (stall_dx) begin
+               if (ready_r_if[gi]) begin
+                  mem_r_intf[gi].val = 0;
+                  ready_if[gi] = 1;
+                  ready_n_if[gi] = ready_r_if[gi];
+               end else begin
+                  mem_r_intf[gi].val = 1;
+                  ready_if[gi] = mem_r_intf[gi].rdy;
+                  nready_if[gi] = ~mem_r_intf[gi].rdy;
+                  ready_n_if[gi] = mem_r_intf[gi].rdy;
+               end
+            end else if (ready_r_if[gi]) begin
+               mem_r_intf[gi].val = cpu_exec_i == 1;
                ready_if[gi] = 1;
             end else begin
-               mem_r_intf[gi].val = 1;
+               mem_r_intf[gi].val = cpu_exec_i == 1 || ~valid_if;
                ready_if[gi] = mem_r_intf[gi].rdy;
+               nready_if[gi] = ~mem_r_intf[gi].rdy;
             end
          end else if (cpu_exec_i == 2 && |gi) begin
             ready_if[gi] = 1;
@@ -108,12 +131,15 @@ module core (
       end
       always_ff @(posedge clk_i) begin
          if (~rst_ni) begin
+            pc_dx[gi] <= pc_if + gi;
             instr_dx[gi] <= 0;
-         end else if (~&ready_if) begin
+         end else if (~valid_if || stall_dx) begin
             // do nothing
          end else if (ready_r_if[gi]) begin
+            pc_dx[gi] <= pc_if + gi;
             instr_dx[gi] <= mem_buf_if[gi];
          end else begin
+            pc_dx[gi] <= pc_if + gi;
             instr_dx[gi] <= mem_r_intf[gi].rdata;
          end
       end
@@ -191,7 +217,7 @@ module core (
    always_ff @(posedge clk_i) begin
       if (~rst_ni) begin
          valid_dx <= 0;
-      end else if (halt_dx || jump_en_dx) begin
+      end else if (jump_en_dx) begin
          valid_dx <= 0;
       end else if (valid_if && ~stall_if && ~jump_en_dx) begin
          valid_dx <= 1;
@@ -239,9 +265,9 @@ module core (
          always_ff @(posedge clk_i) begin
             if (~rst_ni) begin
                en_dx <= 0;
-            end else if (halt_dx || jump_en_dx) begin
+            end else if (jump_en_dx) begin
                en_dx <= 0;
-            end else if (valid_if && ~stall_dx) begin
+            end else if (valid_if && ~stall_dx && ~jump_en_dx) begin
                en_dx <= cpu_exec_i == 1 || ~|gi;
             end else if (~(decoder_preempt_dx[gi].lsu_en && ~lsu_rdy_dx)) begin
                en_dx <= en_next_dx;
@@ -358,6 +384,7 @@ module core (
 
    assign arf_w_wb[`SSC_EX].data = lsu_wb;
 
-   assign cpu_done_o = ~(valid_if || valid_dx || valid_wb) || halt_dx;
+   assign cpu_halt_o = halt_dx;
+   assign cpu_done_o = ~(valid_if || valid_dx || valid_wb);
 
 endmodule

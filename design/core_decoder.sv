@@ -84,8 +84,9 @@ module core_decoder (
          unique case (op)
             4'h0: // halt
                if (up_intf.virgin) begin
-                  my_en_o = 0;
+                  my_en_o = 1;
                   down_intf.en = 0;
+                  down_intf.stall = 1;
                   preempt_intf.halt = 1;
                end else begin
                   down_intf.stall = 1;

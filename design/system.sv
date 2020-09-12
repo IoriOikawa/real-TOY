@@ -48,7 +48,7 @@ module system (
       .r_intf (mem_r)
    );
 
-   logic core_rst_n, pc_wen, cpu_done;
+   logic core_rst_n, pc_wen, cpu_halt, cpu_done;
    logic [1:0] cpu_exec;
    logic instr_val;
    logic [15:0] instr_data;
@@ -81,6 +81,7 @@ module system (
       .pc_o (sw_addr_o),
       .instr_val_o (instr_val),
       .instr_data_o (instr_data),
+      .cpu_halt_o (cpu_halt),
       .cpu_done_o (cpu_done)
    );
 
@@ -93,15 +94,19 @@ module system (
    assign stdout.rdy = stdout_rdy_i;
 
    logic [2:0] state, state_next;
+   logic [2:0] cnt, cnt_next;
    always_ff @(posedge clk_i, negedge rst_n) begin
       if (~rst_n) begin
          state <= 0;
+         cnt <= 0;
       end else begin
          state <= state_next;
+         cnt <= cnt_next;
       end
    end
    always_comb begin
       state_next = state;
+      cnt_next = 0;
       btn_load_o = 0;
       btn_look_o = 0;
       btn_step_o = 0;
@@ -134,10 +139,14 @@ module system (
             begin
                core_rst_n = 1;
                cpu_exec = 2;
-               if (cpu_done) begin // due to halt or step-finished
-                  state_next = 4;
+               if (cpu_done) begin
+                  state_next = 5;
                end else if (inwait) begin
                   state_next = 3;
+                  cnt_next = 3;
+               end else if (cpu_halt) begin
+                  state_next = 6;
+                  cnt_next = 3;
                end
             end
          2: // run
@@ -145,20 +154,25 @@ module system (
                btn_stop_o = 1;
                core_rst_n = 1;
                cpu_exec = 1;
-               if (cpu_done) begin // due to halt
-                  state_next = 0;
-               end else if (inwait) begin
+               if (inwait) begin
                   state_next = 3;
+                  cnt_next = 3;
+               end else if (cpu_halt) begin
+                  state_next = 6;
+                  cnt_next = 3;
                end else if (btn_stop_i) begin
-                  state_next = 4;
+                  state_next = 5;
                end
             end
          3: // pre-inwait
             begin
-               core_rst_n = 1;
-               state_next = 5;
+               core_rst_n = cnt >= 3;
+               cnt_next = |cnt ? cnt - 1 : 0;
+               if (~|cnt && mem_rw.rdy) begin
+                  state_next = 4;
+               end
             end
-         5: // inwait
+         4: // inwait
             begin
                btn_load_o = 1;
                btn_look_o = 1;
@@ -169,40 +183,73 @@ module system (
                   state_next = 0;
                end
             end
-         4: // post-run
+         5: // post-run
             begin
                core_rst_n = 1;
                if (cpu_done) begin
                   state_next = 0;
                end else if (inwait) begin
                   state_next = 3;
+                  cnt_next = 3;
+               end else if (cpu_halt) begin
+                  state_next = 6;
+                  cnt_next = 3;
+               end
+            end
+         6: // pre-halt
+            begin
+               core_rst_n = cnt >= 3;
+               cnt_next = |cnt ? cnt - 1 : 0;
+               if (~|cnt && mem_rw.rdy) begin
+                  state_next = 7;
+               end
+            end
+         7: // halt
+            begin
+               btn_load_o = 1;
+               btn_look_o = 1;
+               btn_enter_o = raw_stdin.rdy;
+               btn_reset_o = 1;
+               led_ready_o = 1;
+               if (btn_load_i || btn_look_i) begin
+                  state_next = 0;
                end
             end
       endcase
    end
 
-   assign pc_wen = cpu_done && (btn_load_i || btn_look_i);
-   assign mem_rw.val = ~cpu_done
-      ? mem_rw_core.val
-      : (btn_load_i || btn_look_i);
-   assign mem_rw.wen = ~cpu_done
-      ? mem_rw_core.wen
-      : btn_load_i;
-   assign mem_rw.addr = ~cpu_done
-      ? mem_rw_core.addr
-      : sw_addr_i;
-   assign mem_rw.wdata = ~cpu_done
-      ? mem_rw_core.wdata
-      : sw_data_i;
-   assign mem_rw_core.rdata = mem_rw.rdata;
-   assign mem_rw_core.rdy = mem_rw.rdy;
+   always_comb begin
+      pc_wen = 0;
+      mem_rw_core.rdata = mem_rw.rdata;
+      mem_rw_core.rdy = mem_rw.rdy;
+      tmp_look_r_next = 0;
+      if (state == 3 || state == 6) begin
+         mem_rw.val = ~|cnt;
+         mem_rw.wen = 0;
+         mem_rw.addr = sw_addr_o;
+         mem_rw.wdata = 0;
+         tmp_look_r_next = ~|cnt && mem_rw.rdy;
+      end else if (cpu_done) begin
+         pc_wen = btn_load_i || btn_look_i;
+         mem_rw.val = btn_load_i || btn_look_i;
+         mem_rw.wen = btn_load_i;
+         mem_rw.addr = sw_addr_i;
+         mem_rw.wdata = sw_data_i;
+         tmp_look_r_next = btn_look_i && mem_rw.rdy;
+      end else begin
+         mem_rw.val = mem_rw_core.val;
+         mem_rw.wen = mem_rw_core.wen;
+         mem_rw.addr = mem_rw_core.addr;
+         mem_rw.wdata = mem_rw_core.wdata;
+      end
+   end
 
-   logic tmp_look_r;
+   logic tmp_look_r, tmp_look_r_next;
    always_ff @(posedge clk_i, negedge rst_n) begin
       if (~rst_n) begin
          tmp_look_r <= 0;
       end else begin
-         tmp_look_r <= cpu_done && btn_look_i && mem_rw.rdy;
+         tmp_look_r <= tmp_look_r_next;
       end
    end
    always_ff @(posedge clk_i, negedge rst_n) begin
