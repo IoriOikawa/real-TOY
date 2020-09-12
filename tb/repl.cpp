@@ -8,8 +8,14 @@
 class tester : public Vsystem {
     VerilatedVcdC _tfp;
     size_t _t;
+    bool _dump;
 public:
-    explicit tester(const std::string &fn) : _t{ 0 } {
+    tester() {
+        clk_i = 1;
+        eval();
+    }
+
+    explicit tester(const std::string &fn) : _t{ 0 }, _dump{ true } {
         trace(&_tfp, 114514);
         _tfp.open(fn.c_str());
         clk_i = 1;
@@ -19,16 +25,16 @@ public:
 
     ~tester() {
         final();
-        _tfp.close();
+        if (_dump) _tfp.close();
     }
 
     void tick() {
         clk_i = 0;
         eval();
-        _tfp.dump(_t++);
+        if (_dump) _tfp.dump(_t++);
         clk_i = 1;
         eval();
-        _tfp.dump(_t++);
+        if (_dump) _tfp.dump(_t++);
     }
 };
 
@@ -55,7 +61,7 @@ auto &operator<<(std::ostream &os, const tester &tb) {
     return os;
 }
 
-int main(int argc, char** argv, char** env) {
+int main(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
     Verilated::traceEverOn(true);
     tester tb{"build/dump.vcd"};
