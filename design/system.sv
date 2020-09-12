@@ -48,13 +48,16 @@ module system (
       .r_intf (mem_r)
    );
 
-   logic core_rst_n, cpu_exec, pc_wen, cpu_done;
+   logic core_rst_n, pc_wen, cpu_done;
+   logic [1:0] cpu_exec;
    logic instr_val;
    logic [15:0] instr_data;
 
    stdio raw_stdin, pipe_stdin, stdout;
 
-   fifo i_stdin_fifo (
+   fifo #(
+      .DEPTH (41)
+   ) i_stdin_fifo (
       .clk_i,
       .rst_ni (rst_n),
       .stdin (raw_stdin),
@@ -130,8 +133,12 @@ module system (
          1: // step
             begin
                core_rst_n = 1;
-               cpu_exec = 1;
-               state_next = 4;
+               cpu_exec = 2;
+               if (cpu_done) begin // due to halt or step-finished
+                  state_next = 4;
+               end else if (inwait) begin
+                  state_next = 3;
+               end
             end
          2: // run
             begin
@@ -146,12 +153,18 @@ module system (
                   state_next = 4;
                end
             end
-         3: // inwait
+         3: // pre-inwait
+            begin
+               core_rst_n = 1;
+               state_next = 5;
+            end
+         5: // inwait
             begin
                btn_load_o = 1;
                btn_look_o = 1;
                btn_enter_o = 1;
                btn_reset_o = 1;
+               led_inwait_o = 1;
                if (btn_enter_i) begin
                   state_next = 0;
                end

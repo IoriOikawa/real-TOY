@@ -48,9 +48,9 @@ auto &operator<<(std::ostream &os, const tester &tb) {
     os << std::setfill('0') << std::setw(2) << std::right << std::hex << static_cast<int>(tb.sw_addr_o) << "   ";
     os << std::setfill('0') << std::setw(4) << std::right << std::hex << static_cast<int>(tb.sw_data_o) << "   ";
     if (tb.stdout_val_o)
-        os << std::setfill('0') << std::setw(4) << std::right << std::hex << static_cast<int>(tb.stdout_data_o);
+        os << ">>" << std::setfill('0') << std::setw(4) << std::right << std::hex << static_cast<int>(tb.stdout_data_o) << "<<";
     else
-        os << "----";
+        os << "  ----  ";
     os << std::endl;
     return os;
 }
@@ -64,6 +64,11 @@ int main(int argc, char** argv, char** env) {
             tb.tick();
         }
         std::cout << tb;
+        if (tb.stdout_val_o) {
+            tb.stdout_rdy_i = 1;
+            tb.tick();
+            tb.stdout_rdy_i = 0;
+        }
         std::string str;
         std::cin >> str;
         if (str == "load" || str == "l") {
