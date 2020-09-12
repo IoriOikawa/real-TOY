@@ -43,13 +43,14 @@ module core_lsu (
             if (wen_i) begin
                rdy_o = stdout_intf.rdy;
                stdout_intf.val = 1;
-               stdout_intf.data = data_ro;
+               stdout_intf.data = data_i;
             end else begin
                state_next = 1;
                rdy_o = stdin_intf.val;
                stdin_intf.rdy = 1;
             end
          end else begin
+            rdy_o = mem_rw_intf.rdy;
             mem_rw_intf.val = 1;
             mem_rw_intf.wen = wen_i;
             mem_rw_intf.addr = addr_i;

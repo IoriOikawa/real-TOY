@@ -31,7 +31,8 @@ module core (
    logic jump_en_dx;
    logic [7:0] jump_targ_dx;
    logic halt_dx;
-   logic [7:0] pc_pc;
+   logic [7:0] pc_pc, pc_n_pc;
+   assign pc_n_pc = jump_en_dx ? jump_targ_dx : pc_pc;
    always_ff @(posedge clk_i, negedge arst_ni) begin
       if (~arst_ni) begin
          pc_pc <= 8'h10;
@@ -43,12 +44,10 @@ module core (
          end
       end else if (halt_dx) begin
          // do nothing
-      end else if (jump_en_dx) begin
-         pc_pc <= jump_targ_dx;
       end else if (cpu_exec_i == 1) begin
-         pc_pc <= pc_pc + `SSC_IF;
+         pc_pc <= pc_n_pc + `SSC_IF;
       end else if (cpu_exec_i == 2) begin
-         pc_pc <= pc_pc + 1;
+         pc_pc <= pc_n_pc + 1;
       end
    end
    assign pc_o = pc_pc;
@@ -64,7 +63,7 @@ module core (
       end else if (~rst_ni) begin
          pc_if <= 0;
       end else if (~stall_if) begin
-         pc_if <= pc_pc;
+         pc_if <= pc_n_pc;
       end
    end
 
@@ -91,7 +90,7 @@ module core (
    generate
    for (genvar gi = 0; gi < `SSC_IF; gi++) begin : g_if
       always_comb begin
-         mem_r_intf[gi].addr = pc_pc + gi;
+         mem_r_intf[gi].addr = pc_n_pc + gi;
          mem_r_intf[gi].val = 0;
          ready_if[gi] = 0;
          nready_if[gi] = 0;
