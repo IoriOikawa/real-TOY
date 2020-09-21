@@ -1,0 +1,5 @@
+*
+!.gitignore
+!*.pro
+!*.kicad_pcb
+!*.sch
