@@ -218,6 +218,7 @@ module system (
       endcase
    end
 
+   logic tmp_look_r, tmp_look_r_next;
    always_comb begin
       pc_wen = 0;
       mem_rw_core.rdata = mem_rw.rdata;
@@ -244,7 +245,6 @@ module system (
       end
    end
 
-   logic tmp_look_r, tmp_look_r_next;
    always_ff @(posedge clk_i, negedge rst_n) begin
       if (~rst_n) begin
          tmp_look_r <= 0;

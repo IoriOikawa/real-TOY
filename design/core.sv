@@ -35,6 +35,7 @@ module core (
    logic jump_en_dx;
    logic [7:0] jump_targ_dx;
    logic halt_dx;
+   logic [7:0] virgin_pc_dx;
    logic [7:0] pc_pc, pc_n_pc;
    assign pc_n_pc = massacre_wb ? massacre_targ_wb
       : jump_en_dx ? jump_targ_dx : pc_pc;
@@ -163,7 +164,6 @@ module core (
       .w_intf (arf_w_wb)
    );
 
-   logic [7:0] virgin_pc_dx;
    logic [3:0] rd_dx[0:`SSC_EX+`SSC_MEM-1], rd_wb[0:`SSC_EX+`SSC_MEM-1];
    logic [7:0] addr_dx[0:`SSC_EX-1];
 
@@ -253,13 +253,13 @@ module core (
    generate
       for (genvar gi = 0; gi < `SSC_EX; gi++) begin : g_dx
          always_comb begin
-            assign tmp_virgin_dx[gi] = decoder_cas_dx[gi].virgin && ~decoder_cas_dx[gi+1].virgin;
-            assign tmp_jump_en_dx[gi] = decoder_preempt_dx[gi].jump_en;
-            assign tmp_jump_kind_dx[gi] = decoder_preempt_dx[gi].jump_kind;
-            assign tmp_lsu_en_dx[gi] = decoder_preempt_dx[gi].lsu_en;
-            assign tmp_lsu_wen_dx[gi] = decoder_preempt_dx[gi].lsu_wen;
-            assign tmp_lsu_kind_dx[gi] = decoder_preempt_dx[gi].lsu_kind;
-            assign tmp_halt_dx[gi] = decoder_preempt_dx[gi].halt;
+            tmp_virgin_dx[gi] = decoder_cas_dx[gi].virgin && ~decoder_cas_dx[gi+1].virgin;
+            tmp_jump_en_dx[gi] = decoder_preempt_dx[gi].jump_en;
+            tmp_jump_kind_dx[gi] = decoder_preempt_dx[gi].jump_kind;
+            tmp_lsu_en_dx[gi] = decoder_preempt_dx[gi].lsu_en;
+            tmp_lsu_wen_dx[gi] = decoder_preempt_dx[gi].lsu_wen;
+            tmp_lsu_kind_dx[gi] = decoder_preempt_dx[gi].lsu_kind;
+            tmp_halt_dx[gi] = decoder_preempt_dx[gi].halt;
          end
 
          logic [3:0] r1_dx;
@@ -386,7 +386,7 @@ module core (
    assign massacre_targ_wb = lsu_pc_wb + 1;
 
    generate
-   for (genvar gi = 0; gi < `SSC_EX+`SSC_MEM; gi++) begin : g_wb
+   for (genvar gi = 0; gi < `SSC_EX+`SSC_MEM; gi++) begin : g_wb0
       always_ff @(posedge clk_i) begin
          if (~rst_ni) begin
             rd_wb[gi] <= 0;
@@ -402,7 +402,7 @@ module core (
       assign arf_w_wb[gi].en = arf_wen_wb[gi];
       assign arf_w_wb[gi].addr = rd_wb[gi];
    end
-   for (genvar gj = 0; gj < `SSC_EX; gj++) begin : g_wb
+   for (genvar gj = 0; gj < `SSC_EX; gj++) begin : g_wb1
       assign arf_w_wb[gj].data = alu_wb[gj];
    end
    endgenerate
