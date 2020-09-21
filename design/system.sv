@@ -121,7 +121,6 @@ module system (
       led_ready_o = 0;
       core_rst_n = 0;
       cpu_exec = 0;
-      instr_val = 0;
       unique case (state)
          0: // ready
             begin

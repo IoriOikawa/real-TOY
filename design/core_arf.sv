@@ -3,8 +3,8 @@
 module core_arf (
    input logic clk_i,
    input logic arst_ni,
-   core_arf_r r_intf[0:R_PORTS-1],
-   core_arf_w w_intf[0:W_PORTS-1]
+   core_arf_r.slave r_intf[0:R_PORTS-1],
+   core_arf_w.slave w_intf[0:W_PORTS-1]
 );
    localparam R_PORTS = 2 * (`SSC_EX + `SSC_MEM);
    localparam W_PORTS = `SSC_EX + `SSC_MEM;

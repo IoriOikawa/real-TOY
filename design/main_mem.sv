@@ -24,6 +24,7 @@ module main_mem (
    generate
    for (gi = 0; gi < `MEM_RPORTS; gi++) begin : g
       logic [7:0] aaddr, baddr;
+      /* verilator lint_off UNUSED */
       logic [15:0] adout, bdin, bdout;
       logic aen, ben, bwen;
       assign aaddr = r_intf[gi].addr;
@@ -50,8 +51,10 @@ module main_mem (
 
       assign r_intf[gi].rdata = adout;
       assign r_intf[gi].rdy = 1;
-      assign rw_intf.rdata = bdout;
-      assign rw_intf.rdy = 1;
+      if (gi == 0) begin
+         assign rw_intf.rdata = bdout;
+         assign rw_intf.rdy = 1;
+      end
    end
    endgenerate
 

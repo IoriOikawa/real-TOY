@@ -14,9 +14,9 @@ module core_decoder (
    input logic branch_z_i,
    input logic branch_p_i,
 
-   core_decoder_cascade up_intf,
-   core_decoder_cascade down_intf,
-   core_decoder_preempt preempt_intf
+   core_decoder_cascade.slave up_intf,
+   core_decoder_cascade.master down_intf,
+   core_decoder_preempt.master preempt_intf
 );
 
    logic [3:0] op;
