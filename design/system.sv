@@ -37,8 +37,9 @@ module system (
    assign rst_n = ~btn_reset_i;
    assign led_power_o = rst_n;
 
-   mem_rwport mem_rw, mem_rw_core;
-   mem_rport mem_r[0:`MEM_RPORTS-1];
+   mem_rwport mem_rw();
+   mem_rwport mem_rw_core();
+   mem_rport mem_r[0:`MEM_RPORTS-1]();
 
    main_mem i_mem (
       .clk_i,
@@ -53,7 +54,9 @@ module system (
    logic instr_val;
    logic [15:0] instr_data;
 
-   stdio raw_stdin, pipe_stdin, stdout;
+   stdio raw_stdin();
+   stdio pipe_stdin();
+   stdio stdout();
 
    fifo #(
       .DEPTH (41)

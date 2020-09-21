@@ -155,8 +155,8 @@ module core (
    // dx
    // =====================
 
-   core_arf_r arf_r_dx[0:2*(`SSC_EX+`SSC_MEM)-1];
-   core_arf_w arf_w_wb[0:`SSC_EX+`SSC_MEM-1];
+   core_arf_r arf_r_dx[0:2*(`SSC_EX+`SSC_MEM)-1]();
+   core_arf_w arf_w_wb[0:`SSC_EX+`SSC_MEM-1]();
    core_arf i_arf (
       .clk_i,
       .arst_ni,
@@ -169,8 +169,8 @@ module core (
 
    logic arf_wen_dx[0:`SSC_EX+`SSC_MEM-1], arf_wen_wb[0:`SSC_EX+`SSC_MEM-1];
    logic [15:0] alu_wb[0:`SSC_EX-1], lsu_wb;
-   core_decoder_cascade decoder_cas_dx[0:`SSC_EX];
-   core_decoder_preempt decoder_preempt_dx[0:`SSC_EX-1];
+   core_decoder_cascade decoder_cas_dx[0:`SSC_EX]();
+   core_decoder_preempt decoder_preempt_dx[0:`SSC_EX-1]();
 
    logic [15:0] r1_byp_dx[0:`SSC_EX-1], r2_byp_dx[0:`SSC_EX-1];
 
