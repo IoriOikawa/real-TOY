@@ -3,7 +3,6 @@
 module i2c (
    input logic clk_i,
    input logic rst_ni,
-   input logic srst_i,
 
    input logic in_val_i,
    input logic [6:0] in_daddr_i,
@@ -41,12 +40,6 @@ module i2c (
          out_err_o <= 0;
          out_data_o <= 0;
          sda_t <= 0;
-      end else if (srst_i) begin
-         state <= 0;
-         div <= 0;
-         out_err_o <= 0;
-         out_data_o <= 0;
-         sda_t <= 0;
       end else begin
          state <= state_next;
          div <= div_next;
@@ -65,11 +58,6 @@ module i2c (
    logic shift_daddr, shift_addr, shift_data;
    always_ff @(posedge clk_i, negedge rst_ni) begin
       if (~rst_ni) begin
-         in_daddr <= 0;
-         in_addr <= 0;
-         in_data <= 0;
-         in_wen <= 0;
-      end else if (srst_i) begin
          in_daddr <= 0;
          in_addr <= 0;
          in_data <= 0;

@@ -13,6 +13,9 @@ module system_wrap (
    // input logic uart_dtr_i
 );
 
+   logic rst_n;
+   assign rst_n = ~btn_i[0];
+
    // TODO
    logic uart_tx_o, uart_rx_i, uart_dtr_i;
    assign uart_rx_i = 0;
@@ -101,7 +104,7 @@ module system_wrap (
 
    oci i_oci (
       .clk_i,
-      .rst_ni,
+      .rst_ni (rst_n),
 
       .lcd_bcd_i (lcd_bcd),
       .gpio_i,
@@ -117,7 +120,7 @@ module system_wrap (
 
    uart i_uart (
       .clk_i,
-      .rst_ni,
+      .rst_ni (rst_n),
       .srst_i (btn_reset_i),
 
       .in_val_i (uart_val),
@@ -132,7 +135,7 @@ module system_wrap (
 
    stdout i_stdout (
       .clk_i,
-      .rst_ni,
+      .rst_ni (rst_n),
 
       .stdout_val_i (stdout_val),
       .stdout_data_i (stdout_data),
@@ -146,5 +149,10 @@ module system_wrap (
       .uart_rdy_i (uart_rdy),
       .uart_avail_i (uart_avail)
    );
+
+   assign led_o[0] = led_inwait_o;
+   assign led_o[1] = led_ready_o;
+   assign led_o[2] = stdout_val;
+   assign led_o[3] = stdout_rdy;
 
 endmodule

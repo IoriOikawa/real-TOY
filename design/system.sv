@@ -31,7 +31,7 @@ module system (
    output logic stdout_val_o,
    output logic [15:0] stdout_data_o,
    input logic stdout_rdy_i,
-   output logic stdout_flush_o,
+   output logic stdout_flush_o
 );
 
    logic rst_n;

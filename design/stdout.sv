@@ -50,6 +50,7 @@ module stdout (
       stdout_rdy_o = 0;
       uart_val_o = 0;
       uart_data_o = 0;
+      tmp = 0;
       if (state == 0) begin // idle
          stdout_rdy_o = 1;
          if (stdout_val_i) begin
@@ -76,7 +77,7 @@ module stdout (
       end else if (state < 9) begin // digit 3~0
          uart_val_o = 1;
          uart_data_o = "0" + tmp;
-         unique case (state) begin
+         unique case (state)
             6: tmp = lcd_bcd_o[3];
             7: tmp = lcd_bcd_o[2];
             8: tmp = lcd_bcd_o[1];
