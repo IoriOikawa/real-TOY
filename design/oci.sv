@@ -7,9 +7,8 @@ module oci #(
 ) (
    input logic clk_i,
    input logic rst_ni,
-   input logic srst_i,
 
-   input logic [15:0] lcd_i,
+   input logic [3:0] lcd_bcd_i[0:3],
    input logic [31:0] gpio_i,
    output logic [31:0] gpio_o,
 
@@ -31,7 +30,6 @@ module oci #(
    i2c i_i2c (
       .clk_i,
       .rst_ni,
-      .srst_i,
 
       .in_val_i (in_val),
       .in_daddr_i (in_daddr),
@@ -55,27 +53,20 @@ module oci #(
 
    logic [4:0] state, state_next;
    logic [31:0] gpio_next;
-   logic [15:0] partial, partial_next;
    always_ff @(posedge clk_i, negedge rst_ni) begin
       if (~rst_ni) begin
          state <= 0;
          gpio_o <= 0;
-         partial <= 0;
-      end else if (srst_i) begin
-         state <= 0;
-         gpio_o <= 0;
-         partial <= 0;
       end else begin
          state <= state_next;
          gpio_o <= gpio_next;
-         partial <= partial_next;
       end
    end
 
+   logic [3:0] tmp;
    always_comb begin
       state_next = state;
       gpio_next = gpio_o;
-      partial_next = lcd_i;
       in_val = 1;
       in_wen = 0;
       in_daddr = 0;
@@ -93,7 +84,7 @@ module oci #(
             3: in_daddr = MCP23017_2;
             4: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h00; // IODIRA = 0x00
+         in_addr = 8'h01; // IODIRB = 0x00
          in_data = 8'h00;
          in_wen = 1;
          if (out_val) begin
@@ -106,7 +97,7 @@ module oci #(
             3: in_daddr = MCP23017_2;
             4: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h0d; // GPPUB = 0xff
+         in_addr = 8'h0c; // GPPUA = 0xff
          in_data = 8'hff;
          in_wen = 1;
          if (out_val) begin
@@ -127,7 +118,7 @@ module oci #(
             12: in_daddr = MCP23017_2;
             13: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h14; // OLATA = <gpio_i>
+         in_addr = 8'h15; // OLATB = <gpio_i>
          unique case (state)
             10: in_data = gpio_i[31:24];
             11: in_data = gpio_i[23:16];
@@ -146,14 +137,33 @@ module oci #(
             16: in_addr = 8'h04;
             17: in_addr = 8'h06;
          endcase
-         /* verilator lint_off WIDTH */
-         in_data = partial % 10;
+         unique case (state)
+            14: tmp = lcd_bcd_i[0];
+            15: tmp = lcd_bcd_i[1];
+            16: tmp = lcd_bcd_i[2];
+            17: tmp = lcd_bcd_i[3];
+         endcase
+         unique case (tmp)
+            4'h0: in_data = 8'h3f;
+            4'h1: in_data = 8'h06;
+            4'h2: in_data = 8'h5b;
+            4'h3: in_data = 8'h4f;
+            4'h4: in_data = 8'h66;
+            4'h5: in_data = 8'h6d;
+            4'h6: in_data = 8'h7d;
+            4'h7: in_data = 8'h07;
+            4'h8: in_data = 8'h7f;
+            4'h9: in_data = 8'h6f;
+            4'ha: in_data = 8'h77;
+            4'hb: in_data = 8'h7c;
+            4'hc: in_data = 8'h39;
+            4'hd: in_data = 8'h5e;
+            4'he: in_data = 8'h79;
+            4'hf: in_data = 8'h71;
+         endcase
          in_wen = 1;
          if (out_val) begin
             state_next = state + 1;
-            partial_next = partial / 10;
-         end else begin
-            partial_next = partial;
          end
       end else if (state < 22) begin // read gpio
          unique case (state)
@@ -162,7 +172,7 @@ module oci #(
             20: in_daddr = MCP23017_2;
             21: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h13; // <gpio_i> = GPIOB
+         in_addr = 8'h12; // <gpio_i> = GPIOA
          in_wen = 0;
          if (out_val) begin
             state_next = state == 24 ? 10 : state + 1;

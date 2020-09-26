@@ -15,10 +15,10 @@ module system (
    output logic btn_enter_o,
    input logic btn_stop_i,
    output logic btn_stop_o,
-   input logic btn_reset_i,
-   output logic btn_reset_o,
 
-   output logic led_power_o,
+   input logic btn_reset_i,
+   input logic btn_debug_i, // TODO
+
    output logic led_inwait_o,
    output logic led_ready_o,
 
@@ -30,12 +30,12 @@ module system (
 
    output logic stdout_val_o,
    output logic [15:0] stdout_data_o,
-   input logic stdout_rdy_i
+   input logic stdout_rdy_i,
+   output logic stdout_flush_o,
 );
 
    logic rst_n;
    assign rst_n = ~btn_reset_i;
-   assign led_power_o = rst_n;
 
    mem_rwport mem_rw();
    mem_rwport mem_rw_core();
@@ -116,11 +116,11 @@ module system (
       btn_run_o = 0;
       btn_enter_o = 0;
       btn_stop_o = 0;
-      btn_reset_o = 0;
       led_inwait_o = 0;
       led_ready_o = 0;
       core_rst_n = 0;
       cpu_exec = 0;
+      stdout_flush_o = 1;
       unique case (state)
          0: // ready
             begin
@@ -129,7 +129,6 @@ module system (
                btn_step_o = 1;
                btn_run_o = 1;
                btn_enter_o = raw_stdin.rdy;
-               btn_reset_o = 1;
                led_ready_o = 1;
                if (btn_run_i) begin
                   state_next = 2;
@@ -156,6 +155,7 @@ module system (
                btn_stop_o = 1;
                core_rst_n = 1;
                cpu_exec = 1;
+               stdout_flush_o = 0;
                if (inwait) begin
                   state_next = 3;
                   cnt_next = 3;
@@ -179,7 +179,6 @@ module system (
                btn_load_o = 1;
                btn_look_o = 1;
                btn_enter_o = 1;
-               btn_reset_o = 1;
                led_inwait_o = 1;
                if (btn_enter_i) begin
                   state_next = 0;
@@ -211,7 +210,6 @@ module system (
                btn_load_o = 1;
                btn_look_o = 1;
                btn_enter_o = raw_stdin.rdy;
-               btn_reset_o = 1;
                led_ready_o = 1;
                if (btn_load_i || btn_look_i) begin
                   state_next = 0;

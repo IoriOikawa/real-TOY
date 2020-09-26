@@ -46,10 +46,12 @@ module uart (
       in_rdy_o = 0;
       uart_tx_o = 1;
       shift_data = 0;
-      avail_i = 1;
-      if (state == 0) begin // init
+      avail_o = 1;
+      if (srst_i) begin
+         in_rdy_o = 1;
+      end else if (state == 0) begin // init
          if (~uart_rx_i) begin
-            avail_i = 0;
+            avail_o = 0;
             in_rdy_o = 1;
          end else if (uart_dtr_i) begin
             in_rdy_o = 1;
