@@ -103,45 +103,76 @@ module oci #(
          if (out_val) begin
             state_next = state + 1;
          end
-      end else if (state == 9) begin // init HT16K33
-         in_daddr = HT16K33;
-         in_addr = 8'h21; // OSC on
-         in_data = 8'h81; // Display on
+      end else if (state < 13) begin // init MCP23017
+         unique case (state)
+            9: in_daddr = MCP23017_0;
+            10: in_daddr = MCP23017_1;
+            11: in_daddr = MCP23017_2;
+            12: in_daddr = MCP23017_3;
+         endcase
+         in_addr = 8'h03; // IPOLB = 0xff
+         in_data = 8'hff;
          in_wen = 1;
          if (out_val) begin
             state_next = state + 1;
          end
-      end else if (state < 14) begin // write gpio
+      end else if (state == 13) begin // init HT16K33
+         in_daddr = HT16K33;
+         in_addr = 8'h21; // OSC on
+         in_data = 8'h00;
+         in_wen = 1;
+         if (out_val) begin
+            state_next = state + 1;
+         end
+      end else if (state == 14) begin // init HT16K33
+         in_daddr = HT16K33;
+         in_addr = 8'h81; // Display on
+         in_data = 8'h00;
+         in_wen = 1;
+         if (out_val) begin
+            state_next = state + 1;
+         end
+      end else if (state == 15) begin // init HT16K33
+         in_daddr = HT16K33;
+         in_addr = 8'he9; // Dimming 10/16
+         in_data = 8'h00;
+         in_wen = 1;
+         if (out_val) begin
+            state_next = state + 1;
+         end
+      end else if (state < 20) begin // write gpio
          unique case (state)
-            10: in_daddr = MCP23017_0;
-            11: in_daddr = MCP23017_1;
-            12: in_daddr = MCP23017_2;
-            13: in_daddr = MCP23017_3;
+            16: in_daddr = MCP23017_0;
+            17: in_daddr = MCP23017_1;
+            18: in_daddr = MCP23017_2;
+            19: in_daddr = MCP23017_3;
          endcase
          in_addr = 8'h14; // OLATA = <gpio_i>
          unique case (state)
-            10: in_data = gpio_i[7:0];
-            11: in_data = gpio_i[15:8];
-            12: in_data = gpio_i[23:16];
-            13: in_data = gpio_i[31:24];
+            16: in_data = gpio_i[7:0];
+            17: in_data = gpio_i[15:8];
+            18: in_data = gpio_i[23:16];
+            19: in_data = gpio_i[31:24];
          endcase
          in_wen = 1;
          if (out_val) begin
             state_next = state + 1;
          end
-      end else if (state < 18) begin // write lcd
+      end else if (state < 25) begin // write lcd
          in_daddr = HT16K33;
          unique case (state)
-            14: in_addr = 8'h00;
-            15: in_addr = 8'h02;
-            16: in_addr = 8'h04;
-            17: in_addr = 8'h06;
+            20: in_addr = 8'h00;
+            21: in_addr = 8'h02;
+            22: in_addr = 8'h04;
+            23: in_addr = 8'h06;
+            24: in_addr = 8'h08;
          endcase
          unique case (state)
-            14: tmp = lcd_bcd_i[0];
-            15: tmp = lcd_bcd_i[1];
-            16: tmp = lcd_bcd_i[2];
-            17: tmp = lcd_bcd_i[3];
+            20: tmp = lcd_bcd_i[3]; // MSB
+            21: tmp = lcd_bcd_i[2];
+            22: tmp = 0; // colon
+            23: tmp = lcd_bcd_i[1];
+            24: tmp = lcd_bcd_i[0]; // LSB
          endcase
          unique case (tmp)
             4'h0: in_data = 8'h3f;
@@ -161,26 +192,29 @@ module oci #(
             4'he: in_data = 8'h79;
             4'hf: in_data = 8'h71;
          endcase
+         if (state == 22) begin
+            in_data = 8'h00;
+         end
          in_wen = 1;
          if (out_val) begin
             state_next = state + 1;
          end
-      end else if (state < 22) begin // read gpio
+      end else if (state < 29) begin // read gpio
          unique case (state)
-            18: in_daddr = MCP23017_0;
-            19: in_daddr = MCP23017_1;
-            20: in_daddr = MCP23017_2;
-            21: in_daddr = MCP23017_3;
+            25: in_daddr = MCP23017_0;
+            26: in_daddr = MCP23017_1;
+            27: in_daddr = MCP23017_2;
+            28: in_daddr = MCP23017_3;
          endcase
          in_addr = 8'h13; // <gpio_i> = GPIOB
          in_wen = 0;
          if (out_val) begin
-            state_next = state == 21 ? 10 : state + 1;
+            state_next = state == 28 ? 16 : state + 1;
             gpio_next = {
-               (state == 18 ? out_data : gpio_o[7:0]),
-               (state == 19 ? out_data : gpio_o[15:8]),
-               (state == 20 ? out_data : gpio_o[23:16]),
-               (state == 21 ? out_data : gpio_o[31:24])
+               (state == 28 ? out_data : gpio_o[31:24]),
+               (state == 27 ? out_data : gpio_o[23:16]),
+               (state == 26 ? out_data : gpio_o[15:8]),
+               (state == 25 ? out_data : gpio_o[7:0])
             };
          end
       end

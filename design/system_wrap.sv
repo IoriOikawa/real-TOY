@@ -37,8 +37,7 @@ module system_wrap (
    // GPIO Group 0 input
    assign sw_addr_i = gpio_o[7:0];
    // GPIO Group 0 output
-   assign gpio_i[7:0] = {7{btn_i[1]}}; // TODO
-   // assign gpio_i[7:0] = sw_addr_o;
+   assign gpio_i[7:0] = sw_addr_o;
    // GPIO Group 1 input
    assign sw_data_i[15:8] = gpio_o[15:8];
    // GPIO Group 1 output
@@ -153,7 +152,7 @@ module system_wrap (
 
    assign led_o[0] = led_inwait_o;
    assign led_o[1] = led_ready_o;
-   assign led_o[2] = btn_i[1];
-   assign led_o[3] = gpio_i[7];
+   assign led_o[2] = stdout_val;
+   assign led_o[3] = stdout_rdy;
 
 endmodule
