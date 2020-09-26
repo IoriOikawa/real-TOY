@@ -5,3 +5,4 @@
 `define MEM_RPORTS (`SSC_IF)
 
 `define I2C_DIV 192 // 12MHz -> 62.5kHz
+`define UART_DIV 1250 // 12MHz -> 9600Hz

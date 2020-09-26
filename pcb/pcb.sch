@@ -868,7 +868,7 @@ $EndComp
 Text Label 6900 1100 0    50   ~ 0
 GND
 Text Label 6900 1000 0    50   ~ 0
-print_3v3
+f2p_3v3
 Text Label 6900 800  0    50   ~ 0
 dtr_3v3
 Text Label 6900 700  0    50   ~ 0
@@ -877,9 +877,9 @@ Text Label 9300 800  2    50   ~ 0
 scl_3v3
 Text Label 9300 900  2    50   ~ 0
 sda_3v3
+Text Label 9300 1300 2    50   ~ 0
+f2p_3v3
 Text Label 9300 1400 2    50   ~ 0
-print_3v3
-Text Label 9300 1500 2    50   ~ 0
 dtr_3v3
 Text Label 700  3000 2    50   ~ 0
 sda
@@ -1634,4 +1634,8 @@ F 3 "" H 9550 2800 50  0001 C CNN
 	1    9550 2800
 	1    0    0    -1  
 $EndComp
+Text Label 6900 900  0    50   ~ 0
+p2f_3v3
+Text Label 9300 1500 2    50   ~ 0
+p2f_3v3
 $EndSCHEMATC

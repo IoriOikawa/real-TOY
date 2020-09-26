@@ -22,7 +22,7 @@ module core_arf (
       logic [W_PORTS-1:0] tmp_en;
       logic [W_PORTS-1:0] tmp_nxt[0:15];
       logic [15:0] tmp_mem_nxt;
-      always @(posedge clk_i, negedge arst_ni) begin
+      always_ff @(posedge clk_i, negedge arst_ni) begin
          if (~arst_ni) begin
             mem[gj] <= 16'b0;
          end else if (|tmp_en) begin
