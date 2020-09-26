@@ -34,22 +34,23 @@ module system_wrap (
 
    logic [31:0] gpio_i, gpio_o;
 
-   // GPIO Group 0 input: A7 -> A0
+   // GPIO Group 0 input
    assign sw_addr_i = gpio_o[7:0];
-   // GPIO Group 0 output: B7 -> B0
-   assign gpio_i[7:0] = sw_addr_o;
-   // GPIO Group 1 input: A7 -> A0
+   // GPIO Group 0 output
+   assign gpio_i[7:0] = {7{btn_i[1]}}; // TODO
+   // assign gpio_i[7:0] = sw_addr_o;
+   // GPIO Group 1 input
    assign sw_data_i[15:8] = gpio_o[15:8];
-   // GPIO Group 1 output: B7 -> B0
+   // GPIO Group 1 output
    assign gpio_i[15:8] = sw_data_o[15:8];
-   // GPIO Group 2 input: A7 -> A0
+   // GPIO Group 2 input
    assign sw_data_i[7:0] = gpio_o[23:16];
-   // GPIO Group 2 output: B7 -> B0
+   // GPIO Group 2 output
    assign gpio_i[23:16] = sw_data_o[7:0];
    // TODO: debouncing
-   // GPIO Group 3 input: A7 -> A0
+   // GPIO Group 3 input
    assign {btn_load_i,btn_look_i,btn_step_i,btn_run_i,btn_enter_i,btn_stop_i,btn_reset_i,btn_debug_i} = gpio_o[30:24];
-   // GPIO Group 3 output: B7 -> B0
+   // GPIO Group 3 output
    assign gpio_i[31:24] = {btn_load_o,btn_look_o,btn_step_o,btn_run_o,btn_enter_o,btn_stop_o,led_inwait_o,led_ready_o};
 
    logic stdout_val, stdout_rdy, stdout_flush;
@@ -152,7 +153,7 @@ module system_wrap (
 
    assign led_o[0] = led_inwait_o;
    assign led_o[1] = led_ready_o;
-   assign led_o[2] = stdout_val;
-   assign led_o[3] = stdout_rdy;
+   assign led_o[2] = btn_i[1];
+   assign led_o[3] = gpio_i[7];
 
 endmodule

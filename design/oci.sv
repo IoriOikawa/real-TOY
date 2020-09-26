@@ -84,7 +84,7 @@ module oci #(
             3: in_daddr = MCP23017_2;
             4: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h01; // IODIRB = 0x00
+         in_addr = 8'h00; // IODIRA = 0x00
          in_data = 8'h00;
          in_wen = 1;
          if (out_val) begin
@@ -92,12 +92,12 @@ module oci #(
          end
       end else if (state < 9) begin // init MCP23017
          unique case (state)
-            1: in_daddr = MCP23017_0;
-            2: in_daddr = MCP23017_1;
-            3: in_daddr = MCP23017_2;
-            4: in_daddr = MCP23017_3;
+            5: in_daddr = MCP23017_0;
+            6: in_daddr = MCP23017_1;
+            7: in_daddr = MCP23017_2;
+            8: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h0c; // GPPUA = 0xff
+         in_addr = 8'h0d; // GPPUB = 0xff
          in_data = 8'hff;
          in_wen = 1;
          if (out_val) begin
@@ -118,12 +118,12 @@ module oci #(
             12: in_daddr = MCP23017_2;
             13: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h15; // OLATB = <gpio_i>
+         in_addr = 8'h14; // OLATA = <gpio_i>
          unique case (state)
-            10: in_data = gpio_i[31:24];
-            11: in_data = gpio_i[23:16];
-            12: in_data = gpio_i[15:8];
-            13: in_data = gpio_i[7:0];
+            10: in_data = gpio_i[7:0];
+            11: in_data = gpio_i[15:8];
+            12: in_data = gpio_i[23:16];
+            13: in_data = gpio_i[31:24];
          endcase
          in_wen = 1;
          if (out_val) begin
@@ -172,15 +172,15 @@ module oci #(
             20: in_daddr = MCP23017_2;
             21: in_daddr = MCP23017_3;
          endcase
-         in_addr = 8'h12; // <gpio_i> = GPIOA
+         in_addr = 8'h13; // <gpio_i> = GPIOB
          in_wen = 0;
          if (out_val) begin
-            state_next = state == 24 ? 10 : state + 1;
+            state_next = state == 21 ? 10 : state + 1;
             gpio_next = {
-               (state == 21 ? out_data : gpio_o[31:24]),
-               (state == 22 ? out_data : gpio_o[23:16]),
-               (state == 23 ? out_data : gpio_o[15:8]),
-               (state == 24 ? out_data : gpio_o[7:0])
+               (state == 18 ? out_data : gpio_o[7:0]),
+               (state == 19 ? out_data : gpio_o[15:8]),
+               (state == 20 ? out_data : gpio_o[23:16]),
+               (state == 21 ? out_data : gpio_o[31:24])
             };
          end
       end

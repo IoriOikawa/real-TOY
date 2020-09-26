@@ -91,7 +91,7 @@ module i2c (
    // States:
    // 02 10 11 12 13 14 15 16 17 18
    //    20 21 22 23 24 25 26 27 28
-   //    50 51 52 53 54 55 56 57 58 08
+   //    50 51 52 53 54 55 56 57 58 03
 
    // I2C Read:
    // S  O6 O5 O4 O3 O2 O1 O0 '0 ac
@@ -103,7 +103,7 @@ module i2c (
    // 02 10 11 12 13 14 15 16 17 18
    //    20 21 22 23 24 25 26 27 28
    // 29 30 31 32 33 34 35 36 37 38
-   //    40 41 42 43 44 45 46 47 48 08
+   //    40 41 42 43 44 45 46 47 48 03
 
    always_comb begin
       state_next = state;
@@ -142,21 +142,24 @@ module i2c (
             state_next = 10;
             div_next = 0;
          end
-      end else if (state == 8) begin // P
+      end else if (state == 3) begin // P
          if (div == CLKDIV1) begin
             sda_t_next = 1;
          end
-         div_next = div + 1;
-         if (div == CLKDIV - 1) begin
-            state_next = 9;
+         if (div == CLKDIV) begin
             sda_t_next = 0;
          end
-      end else if (state == 9) begin // finished
+         scl_t = div < CLKDIV2;
+         div_next = div + 1;
+         if (div == 2 * CLKDIV - 1) begin
+            state_next = 4;
+         end
+      end else if (state == 4) begin // finished
          out_val_o = 1;
          sda_t_next = 0;
          scl_t = 0;
          if (out_rdy_i) begin
-            state_next = 1;
+            state_next = 0;
             out_err_next = 0;
          end
       end else if (state >= 10 && state < 17) begin // O[6] ~ O[0]
@@ -180,18 +183,21 @@ module i2c (
             sda_t_next = 0;
          end
       end else if (state == 18) begin // ac
-         sda_t_next = 0;
+         if (div == CLKDIV1) begin
+            sda_t_next = 0;
+         end
          div_next = div + 1;
          if (div == CLKDIV3) begin
             out_err_next = sda_i;
          end
          if (div == CLKDIV - 1) begin
             if (out_err_o) begin // NACK
-               state_next = 8;
+               state_next = 3;
                div_next = 0;
             end else begin // ACK
                state_next = 20;
                div_next = 0;
+               sda_t_next = 1;
             end
          end
       end else if (state >= 20 && state < 28) begin // A[7]~A[0]
@@ -202,22 +208,24 @@ module i2c (
          if (div == CLKDIV - 1) begin
             state_next = state + 1;
             div_next = 0;
-            sda_t_next = 0;
             shift_addr = 1;
          end
       end else if (state == 28) begin // ac
-         sda_t_next = 0;
+         if (div == CLKDIV1) begin
+            sda_t_next = 0;
+         end
          div_next = div + 1;
          if (div == CLKDIV3) begin
             out_err_next = sda_i;
          end
          if (div == CLKDIV - 1) begin
             if (out_err_o) begin // NACK
-               state_next = 8;
+               state_next = 3;
                div_next = 0;
             end else begin // ACK
                state_next = in_wen ? 50 : 29;
                div_next = 0;
+               sda_t_next = 1;
             end
          end
       end else if (state == 29) begin // SR
@@ -253,18 +261,21 @@ module i2c (
             sda_t_next = 0;
          end
       end else if (state == 38) begin // ac
-         sda_t_next = 0;
+         if (div == CLKDIV1) begin
+            sda_t_next = 0;
+         end
          div_next = div + 1;
          if (div == CLKDIV3) begin
             out_err_next = sda_i;
          end
          if (div == CLKDIV - 1) begin
             if (out_err_o) begin // NACK
-               state_next = 8;
+               state_next = 3;
                div_next = 0;
             end else begin // ACK
                state_next = 40;
                div_next = 0;
+               sda_t_next = 1;
             end
          end
       end else if (state >= 40 && state < 48) begin // d[7]~d[0]
@@ -284,7 +295,7 @@ module i2c (
          end
          div_next = div + 1;
          if (div == CLKDIV - 1) begin
-            state_next = 8;
+            state_next = 3;
             div_next = 0;
          end
       end else if (state >= 50 && state < 58) begin // D[7]~D[0]
@@ -298,18 +309,21 @@ module i2c (
             shift_data = 1;
          end
       end else if (state == 58) begin // ac
-         sda_t_next = 0;
+         if (div == CLKDIV1) begin
+            sda_t_next = 0;
+         end
          div_next = div + 1;
          if (div == CLKDIV3) begin
             out_err_next = sda_i;
          end
          if (div == CLKDIV - 1) begin
             if (out_err_o) begin // NACK
-               state_next = 8;
+               state_next = 3;
                div_next = 0;
             end else begin // ACK
-               state_next = 8;
+               state_next = 3;
                div_next = 0;
+               sda_t_next = 1;
             end
          end
       end
