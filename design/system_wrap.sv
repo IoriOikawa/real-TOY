@@ -9,18 +9,10 @@ module system_wrap (
    logic scl_i, scl_o, scl_t;
    logic sda_i, sda_o, sda_t;
 
-   IOBUF i_scl_iobuf (
-      .IO (i2c_scl_io),
-      .I  (scl_i),
-      .O  (scl_o),
-      .T  (scl_t)
-   );
-   IOBUF i_sda_iobuf (
-      .IO (i2c_sda_io),
-      .I  (sda_i),
-      .O  (sda_o),
-      .T  (sda_t)
-   );
+   assign scl_i = i2c_scl_io;
+   assign sda_i = i2c_sda_io;
+   assign i2c_scl_io = scl_t ? scl_o : 1'bz;
+   assign i2c_sda_io = sda_t ? sda_o : 1'bz;
 
    // TODO: system
 

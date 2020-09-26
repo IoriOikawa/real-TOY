@@ -68,6 +68,6 @@ int main(int argc, char **argv) {
     tb.tick();
     tb.scl_i = 0;
     tb.sda_i = 0;
-    for (size_t i{ 0 }; i < 30 * 128; i++)
+    for (size_t i{ 0 }; i < 192 * 64; i++)
         tb.tick();
 }
