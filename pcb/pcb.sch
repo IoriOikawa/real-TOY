@@ -394,12 +394,12 @@ Wire Wire Line
 $Comp
 L Device:CP1 C2
 U 1 1 5FB8D79E
-P 8300 6150
-F 0 "C2" H 8185 6196 50  0000 R CNN
-F 1 "1u" H 8185 6105 50  0000 R CNN
-F 2 "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm" H 8300 6150 50  0001 C CNN
-F 3 "~" H 8300 6150 50  0001 C CNN
-	1    8300 6150
+P 8450 6150
+F 0 "C2" H 8335 6196 50  0000 R CNN
+F 1 "1u" H 8335 6105 50  0000 R CNN
+F 2 "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm" H 8450 6150 50  0001 C CNN
+F 3 "~" H 8450 6150 50  0001 C CNN
+	1    8450 6150
 	-1   0    0    -1  
 $EndComp
 $Comp
@@ -786,17 +786,13 @@ F 3 "~" H 8750 6150 50  0001 C CNN
 	-1   0    0    -1  
 $EndComp
 Wire Wire Line
-	8000 5800 8300 5800
-Wire Wire Line
-	8000 6500 8300 6500
-Wire Wire Line
-	8300 5800 8300 6000
+	8450 5800 8450 6000
 Wire Wire Line
 	8750 5800 8750 6000
 Wire Wire Line
 	8750 6300 8750 6500
 Wire Wire Line
-	8300 6300 8300 6500
+	8450 6300 8450 6500
 Wire Wire Line
 	6700 6700 5800 6700
 Wire Wire Line
@@ -1296,32 +1292,22 @@ VADJ1
 $Comp
 L Device:CP1 C19
 U 1 1 61552FB7
-P 9200 6150
-F 0 "C19" H 9085 6196 50  0000 R CNN
-F 1 "1u" H 9085 6105 50  0000 R CNN
-F 2 "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm" H 9200 6150 50  0001 C CNN
-F 3 "~" H 9200 6150 50  0001 C CNN
-	1    9200 6150
+P 9100 6150
+F 0 "C19" H 8985 6196 50  0000 R CNN
+F 1 "1u" H 8985 6105 50  0000 R CNN
+F 2 "Capacitor_THT:CP_Radial_D5.0mm_P2.00mm" H 9100 6150 50  0001 C CNN
+F 3 "~" H 9100 6150 50  0001 C CNN
+	1    9100 6150
 	-1   0    0    -1  
 $EndComp
-Connection ~ 8300 5800
-Connection ~ 8300 6500
 Connection ~ 8750 5800
 Connection ~ 8750 6500
 Wire Wire Line
-	8750 6500 9200 6500
+	8750 6500 9100 6500
 Wire Wire Line
-	8300 6500 8750 6500
+	9100 6000 9100 5800
 Wire Wire Line
-	9200 6000 9200 5800
-Connection ~ 9200 5800
-Wire Wire Line
-	9200 5800 9550 5800
-Wire Wire Line
-	9200 6300 9200 6500
-Connection ~ 9200 6500
-Wire Wire Line
-	9200 6500 9550 6500
+	9100 6300 9100 6500
 Text Label 6100 800  2    50   ~ 0
 VIN0
 $Comp
@@ -1571,11 +1557,7 @@ Wire Wire Line
 Connection ~ 8450 5800
 Wire Wire Line
 	8450 5800 8550 5800
-Wire Wire Line
-	8300 5800 8450 5800
 Connection ~ 9100 5800
-Wire Wire Line
-	9100 5800 9200 5800
 Wire Wire Line
 	8350 5250 8350 5700
 Wire Wire Line
@@ -1608,4 +1590,58 @@ F 3 "" H 8750 6500 50  0001 C CNN
 $EndComp
 Text Label 6100 900  2    50   ~ 0
 VDD
+Connection ~ 8450 6500
+Wire Wire Line
+	8450 6500 8750 6500
+Wire Wire Line
+	8000 5800 8200 5800
+Wire Wire Line
+	8000 6500 8200 6500
+Connection ~ 9100 6500
+Wire Wire Line
+	9100 5800 9350 5800
+$Comp
+L Device:C C15
+U 1 1 5F96852D
+P 8200 6150
+F 0 "C15" H 8315 6196 50  0000 L CNN
+F 1 "100n" H 8315 6105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 8238 6000 50  0001 C CNN
+F 3 "~" H 8200 6150 50  0001 C CNN
+	1    8200 6150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C17
+U 1 1 5F97C080
+P 9350 6150
+F 0 "C17" H 9465 6196 50  0000 L CNN
+F 1 "100n" H 9465 6105 50  0000 L CNN
+F 2 "Capacitor_SMD:C_0402_1005Metric" H 9388 6000 50  0001 C CNN
+F 3 "~" H 9350 6150 50  0001 C CNN
+	1    9350 6150
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8200 6000 8200 5800
+Connection ~ 8200 5800
+Wire Wire Line
+	8200 5800 8450 5800
+Wire Wire Line
+	8200 6300 8200 6500
+Connection ~ 8200 6500
+Wire Wire Line
+	8200 6500 8450 6500
+Wire Wire Line
+	9350 6000 9350 5800
+Connection ~ 9350 5800
+Wire Wire Line
+	9350 5800 9550 5800
+Wire Wire Line
+	9350 6300 9350 6500
+Wire Wire Line
+	9100 6500 9350 6500
+Connection ~ 9350 6500
+Wire Wire Line
+	9350 6500 9550 6500
 $EndSCHEMATC
