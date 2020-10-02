@@ -83,6 +83,21 @@ module i2c (
    assign scl_o = 0;
    assign sda_o = 0;
 
+   // I2C Primitives:
+   // S       SCL 1|10|0
+   //         SDA 1|00|.
+   //
+   // Sr      SCL 1|01|10|0
+   //         SDA .|11|00|.
+   //
+   // D/d/ac  SCL 1|01|0
+   //         SDA .|dd|.
+   //
+   // P       SCL 1|01|11|1
+   //         SDA .|00|11|1
+   //
+   // Note: |..| is 16us (62.5kHz)
+
    // I2C Write:
    // S  O6 O5 O4 O3 O2 O1 O0 '0 ac
    //    A7 A6 A5 A4 A3 A2 A1 A0 ac
