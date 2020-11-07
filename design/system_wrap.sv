@@ -6,20 +6,15 @@ module system_wrap (
    output logic [3:0] led_o,
 
    inout logic i2c_scl_io,
-   inout logic i2c_sda_io // ,
+   inout logic i2c_sda_io,
 
-   // output logic uart_tx_o,
-   // input logic uart_rx_i,
-   // input logic uart_dtr_i
+   output logic uart_tx_o,
+   input logic uart_rx_i,
+   input logic uart_dtr_i
 );
 
    logic rst_n;
    assign rst_n = ~btn_i[0];
-
-   // TODO
-   logic uart_tx_o, uart_rx_i, uart_dtr_i;
-   assign uart_rx_i = 0;
-   assign uart_dtr_i = 0;
 
    logic btn_load_i, btn_load_o;
    logic btn_look_i, btn_look_o;
@@ -32,25 +27,36 @@ module system_wrap (
    logic [7:0] sw_addr_i, sw_addr_o;
    logic [15:0] sw_data_i, sw_data_o;
 
-   logic [31:0] gpio_i, gpio_o;
+   logic [32:0] gpio_i;
+   logic [30:0] gpio_o;
 
-   // GPIO Group 0 input
-   assign sw_addr_i = gpio_o[7:0];
-   // GPIO Group 0 output
-   assign gpio_i[7:0] = sw_addr_o;
-   // GPIO Group 1 input
-   assign sw_data_i[15:8] = gpio_o[15:8];
-   // GPIO Group 1 output
-   assign gpio_i[15:8] = sw_data_o[15:8];
-   // GPIO Group 2 input
-   assign sw_data_i[7:0] = gpio_o[23:16];
-   // GPIO Group 2 output
-   assign gpio_i[23:16] = sw_data_o[7:0];
    // TODO: debouncing
-   // GPIO Group 3 input
-   assign {btn_load_i,btn_look_i,btn_step_i,btn_run_i,btn_enter_i,btn_stop_i,btn_reset_i,btn_debug_i} = gpio_o[30:24];
-   // GPIO Group 3 output
-   assign gpio_i[31:24] = {btn_load_o,btn_look_o,btn_step_o,btn_run_o,btn_enter_o,btn_stop_o,led_inwait_o,led_ready_o};
+   // TODO: debug button
+   assign btn_debug_i = btn_i[1];
+   assign {
+      btn_load_i,
+      btn_look_i,
+      btn_step_i,
+      btn_run_i,
+      btn_enter_i,
+      btn_stop_i,
+      btn_reset_i,
+      sw_addr_i,
+      sw_data_i
+   } = gpio_o[30:24];
+   assign gpio_i[32:24] = {
+      led_inwait_o,
+      btn_load_o,
+      btn_look_o,
+      btn_step_o,
+      btn_run_o,
+      btn_enter_o,
+      btn_stop_o,
+      led_ready_o,
+      1'b1,
+      sw_addr_o,
+      sw_data_o
+   };
 
    logic stdout_val, stdout_rdy, stdout_flush;
    logic [15:0] stdout_data;

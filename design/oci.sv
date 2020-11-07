@@ -9,8 +9,8 @@ module oci #(
    input logic rst_ni,
 
    input logic [3:0] lcd_bcd_i[0:3],
-   input logic [31:0] gpio_i,
-   output logic [31:0] gpio_o,
+   input logic [32:0] gpio_i,
+   output logic [30:0] gpio_o,
 
    input logic scl_i,
    output logic scl_o,
@@ -63,160 +63,95 @@ module oci #(
       end
    end
 
+   function logic [7:0] bcd(input logic [3:0] bin);
+      unique case (bin)
+         4'h0: bcd = 8'h3f;
+         4'h1: bcd = 8'h06;
+         4'h2: bcd = 8'h5b;
+         4'h3: bcd = 8'h4f;
+         4'h4: bcd = 8'h66;
+         4'h5: bcd = 8'h6d;
+         4'h6: bcd = 8'h7d;
+         4'h7: bcd = 8'h07;
+         4'h8: bcd = 8'h7f;
+         4'h9: bcd = 8'h6f;
+         4'ha: bcd = 8'h77;
+         4'hb: bcd = 8'h7c;
+         4'hc: bcd = 8'h39;
+         4'hd: bcd = 8'h5e;
+         4'he: bcd = 8'h79;
+         4'hf: bcd = 8'h71;
+      endcase
+   endfunction
+
+   struct packed {
+      bit [6:0] daddr;
+      bit wen;
+      bit [7:0] addr;
+      bit [7:0] data;
+   } req;
+
+   assign in_daddr = req.daddr;
+   assign in_wen = req.wen;
+   assign in_addr = req.addr;
+   assign in_data = req.data;
+
    logic [3:0] tmp;
    always_comb begin
       state_next = state;
       gpio_next = gpio_o;
       in_val = 1;
-      in_wen = 0;
-      in_daddr = 0;
-      in_addr = 0;
-      in_data = 0;
       out_rdy = 1;
-      if (state == 0) begin // init
+      req = '{8'h00, 0, 8'h00, 8'h00};
+      unique case (state)
+         5'd01: req = '{MCP23017_0, 1, 8'h00, 8'h00}; // IODIRA
+         5'd02: req = '{MCP23017_0, 1, 8'h0d, 8'hff}; // GPPUB
+         5'd03: req = '{MCP23017_0, 1, 8'h03, 8'hff}; // IPOLB
+         5'd04: req = '{MCP23017_1, 1, 8'h00, 8'h00}; // IODIRA
+         5'd05: req = '{MCP23017_1, 1, 8'h01, 8'hfd}; // IODIRB
+         5'd06: req = '{MCP23017_1, 1, 8'h0d, 8'hfd}; // GPPUB
+         5'd07: req = '{MCP23017_1, 1, 8'h03, 8'hfd}; // IPOLB
+         5'd08: req = '{MCP23017_2, 1, 8'h00, 8'h00}; // IODIRA
+         5'd09: req = '{MCP23017_2, 1, 8'h0d, 8'hff}; // GPPUB
+         5'd10: req = '{MCP23017_2, 1, 8'h03, 8'hff}; // IPOLB
+         5'd11: req = '{MCP23017_3, 1, 8'h01, 8'h00}; // IODIRB
+         5'd12: req = '{MCP23017_3, 1, 8'h0c, 8'hff}; // GPPUA
+         5'd13: req = '{MCP23017_3, 1, 8'h02, 8'hff}; // IPOLA
+         5'd14: req = '{HT16K33,    1, 8'h21, 8'h00}; // OSC on
+         5'd15: req = '{HT16K33,    1, 8'h81, 8'h00}; // Display on
+         5'd16: req = '{HT16K33,    1, 8'he9, 8'h00}; // Dimming 10/16
+         5'd17: req = '{HT16K33,    1, 8'h04, 8'h00}; // colon
+
+         5'd18: req = '{MCP23017_0, 1, 8'h14, gpio_i[7:0]}; // OLATA
+         5'd19: req = '{MCP23017_0, 0, 8'h13, 8'h00}; // GPIOB
+         5'd20: req = '{MCP23017_1, 1, 8'h14, gpio_i[23:16]}; // OLATA
+         5'd21: req = '{MCP23017_1, 1, 8'h15, {6'h00,gpio_i[32],1'h0}}; // OLATB
+         5'd22: req = '{MCP23017_1, 0, 8'h13, 8'h00}; // GPIOB
+         5'd23: req = '{MCP23017_2, 1, 8'h14, gpio_i[15:8]}; // OLATA
+         5'd24: req = '{MCP23017_2, 0, 8'h13, 8'h00}; // GPIOB
+         5'd25: req = '{MCP23017_3, 1, 8'h15, gpio_i[31:24]}; // OLATB
+         5'd26: req = '{MCP23017_3, 0, 8'h12, 8'h00}; // GPIOA
+         5'd27: req = '{HT16K33,    1, 8'h00, bcd(lcd_bcd_i[3])}; // MSD
+         5'd28: req = '{HT16K33,    1, 8'h02, bcd(lcd_bcd_i[2])}; //
+         5'd29: req = '{HT16K33,    1, 8'h06, bcd(lcd_bcd_i[1])}; //
+         5'd30: req = '{HT16K33,    1, 8'h08, bcd(lcd_bcd_i[0])}; // LSD
+      endcase
+      if (state == 0 || out_val) begin
          state_next = state + 1;
-         in_val = 0;
-         out_rdy = 0;
-      end else if (state < 5) begin // init MCP23017
          unique case (state)
-            1: in_daddr = MCP23017_0;
-            2: in_daddr = MCP23017_1;
-            3: in_daddr = MCP23017_2;
-            4: in_daddr = MCP23017_3;
+            5'd00: begin
+               in_val = 0;
+               out_rdy = 0;
+            end
+            5'd20: gpio_next[23:16] = out_data;
+            5'd22: begin
+               gpio_next[30:25] = out_data[7:2];
+               gpio_next[24] = out_data[0];
+            end
+            5'd24: gpio_next[15:8] = out_data;
+            5'd26: gpio_next[7:0] = out_data;
+            5'd30: state_next = 18;
          endcase
-         in_addr = 8'h00; // IODIRA = 0x00
-         in_data = 8'h00;
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state < 9) begin // init MCP23017
-         unique case (state)
-            5: in_daddr = MCP23017_0;
-            6: in_daddr = MCP23017_1;
-            7: in_daddr = MCP23017_2;
-            8: in_daddr = MCP23017_3;
-         endcase
-         in_addr = 8'h0d; // GPPUB = 0xff
-         in_data = 8'hff;
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state < 13) begin // init MCP23017
-         unique case (state)
-            9: in_daddr = MCP23017_0;
-            10: in_daddr = MCP23017_1;
-            11: in_daddr = MCP23017_2;
-            12: in_daddr = MCP23017_3;
-         endcase
-         in_addr = 8'h03; // IPOLB = 0xff
-         in_data = 8'hff;
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state == 13) begin // init HT16K33
-         in_daddr = HT16K33;
-         in_addr = 8'h21; // OSC on
-         in_data = 8'h00;
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state == 14) begin // init HT16K33
-         in_daddr = HT16K33;
-         in_addr = 8'h81; // Display on
-         in_data = 8'h00;
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state == 15) begin // init HT16K33
-         in_daddr = HT16K33;
-         in_addr = 8'he9; // Dimming 10/16
-         in_data = 8'h00;
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state < 20) begin // write gpio
-         unique case (state)
-            16: in_daddr = MCP23017_0;
-            17: in_daddr = MCP23017_1;
-            18: in_daddr = MCP23017_2;
-            19: in_daddr = MCP23017_3;
-         endcase
-         in_addr = 8'h14; // OLATA = <gpio_i>
-         unique case (state)
-            16: in_data = gpio_i[7:0];
-            17: in_data = gpio_i[15:8];
-            18: in_data = gpio_i[23:16];
-            19: in_data = gpio_i[31:24];
-         endcase
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state < 25) begin // write lcd
-         in_daddr = HT16K33;
-         unique case (state)
-            20: in_addr = 8'h00;
-            21: in_addr = 8'h02;
-            22: in_addr = 8'h04;
-            23: in_addr = 8'h06;
-            24: in_addr = 8'h08;
-         endcase
-         unique case (state)
-            20: tmp = lcd_bcd_i[3]; // MSB
-            21: tmp = lcd_bcd_i[2];
-            22: tmp = 0; // colon
-            23: tmp = lcd_bcd_i[1];
-            24: tmp = lcd_bcd_i[0]; // LSB
-         endcase
-         unique case (tmp)
-            4'h0: in_data = 8'h3f;
-            4'h1: in_data = 8'h06;
-            4'h2: in_data = 8'h5b;
-            4'h3: in_data = 8'h4f;
-            4'h4: in_data = 8'h66;
-            4'h5: in_data = 8'h6d;
-            4'h6: in_data = 8'h7d;
-            4'h7: in_data = 8'h07;
-            4'h8: in_data = 8'h7f;
-            4'h9: in_data = 8'h6f;
-            4'ha: in_data = 8'h77;
-            4'hb: in_data = 8'h7c;
-            4'hc: in_data = 8'h39;
-            4'hd: in_data = 8'h5e;
-            4'he: in_data = 8'h79;
-            4'hf: in_data = 8'h71;
-         endcase
-         if (state == 22) begin
-            in_data = 8'h00;
-         end
-         in_wen = 1;
-         if (out_val) begin
-            state_next = state + 1;
-         end
-      end else if (state < 29) begin // read gpio
-         unique case (state)
-            25: in_daddr = MCP23017_0;
-            26: in_daddr = MCP23017_1;
-            27: in_daddr = MCP23017_2;
-            28: in_daddr = MCP23017_3;
-         endcase
-         in_addr = 8'h13; // <gpio_i> = GPIOB
-         in_wen = 0;
-         if (out_val) begin
-            state_next = state == 28 ? 16 : state + 1;
-            gpio_next = {
-               (state == 28 ? out_data : gpio_o[31:24]),
-               (state == 27 ? out_data : gpio_o[23:16]),
-               (state == 26 ? out_data : gpio_o[15:8]),
-               (state == 25 ? out_data : gpio_o[7:0])
-            };
-         end
       end
    end
 
