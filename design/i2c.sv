@@ -143,7 +143,12 @@ module i2c (
       end else if (state == 1) begin // wait for bus
          sda_t_next = 0;
          scl_t = 0;
-         if (scl_i && sda_i) begin
+`ifndef VERILATOR
+`define SKIP 0
+`else
+`define SKIP 1
+`endif
+         if (scl_i && sda_i || `SKIP) begin
             state_next = 2;
             div_next = 0;
          end
