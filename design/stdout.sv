@@ -9,6 +9,7 @@ module stdout (
    output logic stdout_rdy_o,
    input logic stdout_flush_i,
 
+   // TODO: use hex
    output logic [3:0] lcd_bcd_o[0:3],
 
    output logic uart_val_o,

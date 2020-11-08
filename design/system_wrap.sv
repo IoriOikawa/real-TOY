@@ -33,35 +33,28 @@ module system_wrap (
    // TODO: debouncing
    // TODO: debug button
    assign btn_debug_i = btn_i[1];
-   assign {
-      btn_load_i,
-      btn_look_i,
-      btn_step_i,
-      btn_run_i,
-      btn_enter_i,
-      btn_stop_i,
-      btn_reset_i,
-      sw_addr_i,
-      sw_data_i
-   } = gpio_o[30:24];
-   assign gpio_i[32:24] = {
+   assign gpio_i = {
       led_inwait_o,
-      btn_load_o,
-      btn_look_o,
-      btn_step_o,
-      btn_run_o,
-      btn_enter_o,
-      btn_stop_o,
-      led_ready_o,
       1'b1,
-      sw_addr_o,
-      sw_data_o
+      led_ready_o,
+      btn_stop_o,
+      btn_enter_o,
+      btn_run_o,
+      btn_step_o,
+      btn_look_o,
+      btn_load_o,
+      sw_addr_o[0], sw_addr_o[1], sw_addr_o[2], sw_addr_o[3],
+      sw_addr_o[4], sw_addr_o[5], sw_addr_o[6], sw_addr_o[7],
+      sw_data_o[8], sw_data_o[9], sw_data_o[10], sw_data_o[11],
+      sw_data_o[12], sw_data_o[13], sw_data_o[14], sw_data_o[15],
+      sw_data_o[0], sw_data_o[1], sw_data_o[2], sw_data_o[3],
+      sw_data_o[4], sw_data_o[5], sw_data_o[6], sw_data_o[7]
    };
+   assign stdout_val = 1;
+   assign stdout_data = 16'hb612;
 
    logic stdout_val, stdout_rdy, stdout_flush;
    logic [15:0] stdout_data;
-
-   logic [3:0] lcd_bcd[0:3];
 
    logic uart_val, uart_rdy, uart_avail;
    logic [7:0] uart_data;
@@ -112,7 +105,7 @@ module system_wrap (
       .clk_i,
       .rst_ni (rst_n),
 
-      .lcd_bcd_i (lcd_bcd),
+      .lcd_i (stdout_data),
       .gpio_i,
       .gpio_o,
 
@@ -147,8 +140,6 @@ module system_wrap (
       .stdout_data_i (stdout_data),
       .stdout_rdy_o (stdout_rdy),
       .stdout_flush_i (stdout_flush),
-
-      .lcd_bcd_o (lcd_bcd),
 
       .uart_val_o (uart_val),
       .uart_data_o (uart_data),

@@ -8,7 +8,7 @@ module oci #(
    input logic clk_i,
    input logic rst_ni,
 
-   input logic [3:0] lcd_bcd_i[0:3],
+   input logic [16:0] lcd_i,
    input logic [32:0] gpio_i,
    output logic [30:0] gpio_o,
 
@@ -63,24 +63,24 @@ module oci #(
       end
    end
 
-   function logic [7:0] bcd(input logic [3:0] bin);
+   function logic [7:0] digit(input logic [3:0] bin);
       unique case (bin)
-         4'h0: bcd = 8'h3f;
-         4'h1: bcd = 8'h06;
-         4'h2: bcd = 8'h5b;
-         4'h3: bcd = 8'h4f;
-         4'h4: bcd = 8'h66;
-         4'h5: bcd = 8'h6d;
-         4'h6: bcd = 8'h7d;
-         4'h7: bcd = 8'h07;
-         4'h8: bcd = 8'h7f;
-         4'h9: bcd = 8'h6f;
-         4'ha: bcd = 8'h77;
-         4'hb: bcd = 8'h7c;
-         4'hc: bcd = 8'h39;
-         4'hd: bcd = 8'h5e;
-         4'he: bcd = 8'h79;
-         4'hf: bcd = 8'h71;
+         4'h0: digit = 8'h3f;
+         4'h1: digit = 8'h06;
+         4'h2: digit = 8'h5b;
+         4'h3: digit = 8'h4f;
+         4'h4: digit = 8'h66;
+         4'h5: digit = 8'h6d;
+         4'h6: digit = 8'h7d;
+         4'h7: digit = 8'h07;
+         4'h8: digit = 8'h7f;
+         4'h9: digit = 8'h6f;
+         4'ha: digit = 8'h77;
+         4'hb: digit = 8'h7c;
+         4'hc: digit = 8'h39;
+         4'hd: digit = 8'h5e;
+         4'he: digit = 8'h79;
+         4'hf: digit = 8'h71;
       endcase
    endfunction
 
@@ -106,9 +106,9 @@ module oci #(
          5'd02: req = '{MCP23017_0, 1, 8'h0d, 8'hff}; // GPPUB
          5'd03: req = '{MCP23017_0, 1, 8'h03, 8'hff}; // IPOLB
          5'd04: req = '{MCP23017_1, 1, 8'h00, 8'h00}; // IODIRA
-         5'd05: req = '{MCP23017_1, 1, 8'h01, 8'hfd}; // IODIRB
-         5'd06: req = '{MCP23017_1, 1, 8'h0d, 8'hfd}; // GPPUB
-         5'd07: req = '{MCP23017_1, 1, 8'h03, 8'hfd}; // IPOLB
+         5'd05: req = '{MCP23017_1, 1, 8'h01, 8'hbf}; // IODIRB
+         5'd06: req = '{MCP23017_1, 1, 8'h0d, 8'hbf}; // GPPUB
+         5'd07: req = '{MCP23017_1, 1, 8'h03, 8'hbf}; // IPOLB
          5'd08: req = '{MCP23017_2, 1, 8'h00, 8'h00}; // IODIRA
          5'd09: req = '{MCP23017_2, 1, 8'h0d, 8'hff}; // GPPUB
          5'd10: req = '{MCP23017_2, 1, 8'h03, 8'hff}; // IPOLB
@@ -123,16 +123,16 @@ module oci #(
          5'd18: req = '{MCP23017_0, 1, 8'h14, gpio_i[7:0]}; // OLATA
          5'd19: req = '{MCP23017_0, 0, 8'h13, 8'h00}; // GPIOB
          5'd20: req = '{MCP23017_1, 1, 8'h14, gpio_i[23:16]}; // OLATA
-         5'd21: req = '{MCP23017_1, 1, 8'h15, {6'h00,gpio_i[32],1'h0}}; // OLATB
+         5'd21: req = '{MCP23017_1, 1, 8'h15, {1'h0,gpio_i[32],6'h00}}; // OLATB
          5'd22: req = '{MCP23017_1, 0, 8'h13, 8'h00}; // GPIOB
          5'd23: req = '{MCP23017_2, 1, 8'h14, gpio_i[15:8]}; // OLATA
          5'd24: req = '{MCP23017_2, 0, 8'h13, 8'h00}; // GPIOB
          5'd25: req = '{MCP23017_3, 1, 8'h15, gpio_i[31:24]}; // OLATB
          5'd26: req = '{MCP23017_3, 0, 8'h12, 8'h00}; // GPIOA
-         5'd27: req = '{HT16K33,    1, 8'h00, bcd(lcd_bcd_i[3])}; // MSD
-         5'd28: req = '{HT16K33,    1, 8'h02, bcd(lcd_bcd_i[2])}; //
-         5'd29: req = '{HT16K33,    1, 8'h06, bcd(lcd_bcd_i[1])}; //
-         5'd30: req = '{HT16K33,    1, 8'h08, bcd(lcd_bcd_i[0])}; // LSD
+         5'd27: req = '{HT16K33,    1, 8'h00, digit(lcd_i[15:12])}; // MSD
+         5'd28: req = '{HT16K33,    1, 8'h02, digit(lcd_i[11:8])}; //
+         5'd29: req = '{HT16K33,    1, 8'h06, digit(lcd_i[7:4])}; //
+         5'd30: req = '{HT16K33,    1, 8'h08, digit(lcd_i[3:0])}; // LSD
 
          default: req = '{7'h00, 0, 8'h00, 8'h00};
       endcase
@@ -143,10 +143,10 @@ module oci #(
                in_val = 0;
                out_rdy = 0;
             end
-            5'd20: gpio_next[23:16] = out_data;
+            5'd19: gpio_next[23:16] = out_data;
             5'd22: begin
-               gpio_next[30:25] = out_data[7:2];
-               gpio_next[24] = out_data[0];
+               gpio_next[29:24] = out_data[6:0];
+               gpio_next[30] = out_data[7];
             end
             5'd24: gpio_next[15:8] = out_data;
             5'd26: gpio_next[7:0] = out_data;
