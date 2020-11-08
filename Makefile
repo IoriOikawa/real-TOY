@@ -37,6 +37,9 @@ build: build/output.bit
 program: script/program.tcl script/common.tcl build/output.bit
 	./script/launch.sh $<
 
+flash: script/flash.tcl script/common.tcl build/output.bit
+	./script/launch.sh $<
+
 build/post_synth.dcp: script/synth.tcl script/common.tcl $(DESIGN) constr/timing.xdc
 	./script/launch.sh $< $(XCI)
 
@@ -66,4 +69,4 @@ constr/debug.xdc:
 clean:
 	rm -rf build/
 
-.PHONY: all verif test build program clean
+.PHONY: all verif test build program flash clean
