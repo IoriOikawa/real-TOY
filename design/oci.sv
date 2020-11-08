@@ -52,7 +52,7 @@ module oci #(
    );
 
    logic [4:0] state, state_next;
-   logic [31:0] gpio_next;
+   logic [30:0] gpio_next;
    always_ff @(posedge clk_i, negedge rst_ni) begin
       if (~rst_ni) begin
          state <= 0;
@@ -96,13 +96,11 @@ module oci #(
    assign in_addr = req.addr;
    assign in_data = req.data;
 
-   logic [3:0] tmp;
    always_comb begin
       state_next = state;
       gpio_next = gpio_o;
       in_val = 1;
       out_rdy = 1;
-      req = '{8'h00, 0, 8'h00, 8'h00};
       unique case (state)
          5'd01: req = '{MCP23017_0, 1, 8'h00, 8'h00}; // IODIRA
          5'd02: req = '{MCP23017_0, 1, 8'h0d, 8'hff}; // GPPUB
@@ -135,6 +133,8 @@ module oci #(
          5'd28: req = '{HT16K33,    1, 8'h02, bcd(lcd_bcd_i[2])}; //
          5'd29: req = '{HT16K33,    1, 8'h06, bcd(lcd_bcd_i[1])}; //
          5'd30: req = '{HT16K33,    1, 8'h08, bcd(lcd_bcd_i[0])}; // LSD
+
+         default: req = '{7'h00, 0, 8'h00, 8'h00};
       endcase
       if (state == 0 || out_val) begin
          state_next = state + 1;
@@ -151,6 +151,7 @@ module oci #(
             5'd24: gpio_next[15:8] = out_data;
             5'd26: gpio_next[7:0] = out_data;
             5'd30: state_next = 18;
+            default: begin end
          endcase
       end
    end
